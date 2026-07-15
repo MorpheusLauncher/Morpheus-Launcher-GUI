@@ -94,8 +94,7 @@ final MarkdownStyleSheet Function(BuildContext, MarkdownStyleSheetBaseTheme?)
   MarkdownStyleSheetBaseTheme? baseTheme,
 ) {
   final MarkdownStyleSheet result = switch (baseTheme) {
-    MarkdownStyleSheetBaseTheme.platform when _userAgent.toDart.contains('Mac OS X') =>
-      MarkdownStyleSheet.fromCupertinoTheme(CupertinoTheme.of(context)),
+    MarkdownStyleSheetBaseTheme.platform when _userAgent.toDart.contains('Mac OS X') => MarkdownStyleSheet.fromCupertinoTheme(CupertinoTheme.of(context)),
     MarkdownStyleSheetBaseTheme.cupertino => MarkdownStyleSheet.fromCupertinoTheme(CupertinoTheme.of(context)),
     _ => MarkdownStyleSheet.fromTheme(Theme.of(context)),
   };

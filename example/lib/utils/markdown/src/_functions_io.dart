@@ -87,9 +87,7 @@ final MarkdownStyleSheet Function(BuildContext, MarkdownStyleSheetBaseTheme?)
   MarkdownStyleSheet result;
   switch (baseTheme) {
     case MarkdownStyleSheetBaseTheme.platform:
-      result = (Platform.isIOS || Platform.isMacOS)
-          ? MarkdownStyleSheet.fromCupertinoTheme(CupertinoTheme.of(context))
-          : MarkdownStyleSheet.fromTheme(Theme.of(context));
+      result = (Platform.isIOS || Platform.isMacOS) ? MarkdownStyleSheet.fromCupertinoTheme(CupertinoTheme.of(context)) : MarkdownStyleSheet.fromTheme(Theme.of(context));
     case MarkdownStyleSheetBaseTheme.cupertino:
       result = MarkdownStyleSheet.fromCupertinoTheme(CupertinoTheme.of(context));
     case MarkdownStyleSheetBaseTheme.material:

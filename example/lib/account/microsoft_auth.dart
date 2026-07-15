@@ -8,7 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:morpheus_launcher_gui/account/account_utils.dart';
 import 'package:morpheus_launcher_gui/globals.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
 
 Future<String> doMicrosoftConsent(dynamic context) async {
   var response = await http.post(

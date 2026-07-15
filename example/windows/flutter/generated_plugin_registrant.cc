@@ -7,7 +7,7 @@
 #include "generated_plugin_registrant.h"
 
 #include <bitsdojo_window_windows/bitsdojo_window_plugin.h>
-#include <discord_rpc/discord_rpc_plugin.h>
+#include <file_selector_windows/file_selector_windows.h>
 #include <flutter_acrylic/flutter_acrylic_plugin.h>
 #include <flutter_localization/flutter_localization_plugin_c_api.h>
 #include <flutter_secure_storage_windows/flutter_secure_storage_windows_plugin.h>
@@ -17,8 +17,8 @@
 void RegisterPlugins(flutter::PluginRegistry* registry) {
   BitsdojoWindowPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("BitsdojoWindowPlugin"));
-  DiscordRpcPluginRegisterWithRegistrar(
-      registry->GetRegistrarForPlugin("DiscordRpcPlugin"));
+  FileSelectorWindowsRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("FileSelectorWindows"));
   FlutterAcrylicPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("FlutterAcrylicPlugin"));
   FlutterLocalizationPluginCApiRegisterWithRegistrar(

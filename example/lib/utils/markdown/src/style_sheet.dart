@@ -234,36 +234,26 @@ class MarkdownStyleSheet {
       tableColumnWidth: const FlexColumnWidth(),
       tableCellsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       tableCellsDecoration: BoxDecoration(
-        color: theme.brightness == Brightness.dark
-            ? CupertinoColors.systemGrey6.darkColor
-            : CupertinoColors.systemGrey6.color,
+        color: theme.brightness == Brightness.dark ? CupertinoColors.systemGrey6.darkColor : CupertinoColors.systemGrey6.color,
       ),
       blockquotePadding: const EdgeInsets.all(16),
       blockquoteDecoration: BoxDecoration(
-        color: theme.brightness == Brightness.dark
-            ? CupertinoColors.systemGrey6.darkColor
-            : CupertinoColors.systemGrey6.color,
+        color: theme.brightness == Brightness.dark ? CupertinoColors.systemGrey6.darkColor : CupertinoColors.systemGrey6.color,
         border: Border(
           left: BorderSide(
-            color: theme.brightness == Brightness.dark
-                ? CupertinoColors.systemGrey4.darkColor
-                : CupertinoColors.systemGrey4.color,
+            color: theme.brightness == Brightness.dark ? CupertinoColors.systemGrey4.darkColor : CupertinoColors.systemGrey4.color,
             width: 4,
           ),
         ),
       ),
       codeblockPadding: const EdgeInsets.all(8),
       codeblockDecoration: BoxDecoration(
-        color: theme.brightness == Brightness.dark
-            ? CupertinoColors.systemGrey6.darkColor
-            : CupertinoColors.systemGrey6.color,
+        color: theme.brightness == Brightness.dark ? CupertinoColors.systemGrey6.darkColor : CupertinoColors.systemGrey6.color,
       ),
       horizontalRuleDecoration: BoxDecoration(
         border: Border(
           top: BorderSide(
-            color: theme.brightness == Brightness.dark
-                ? CupertinoColors.systemGrey4.darkColor
-                : CupertinoColors.systemGrey4.color,
+            color: theme.brightness == Brightness.dark ? CupertinoColors.systemGrey4.darkColor : CupertinoColors.systemGrey4.color,
           ),
         ),
       ),

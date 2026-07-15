@@ -2,12 +2,13 @@ import 'dart:convert';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import '../utils/markdown/flutter_markdown_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:morpheus_launcher_gui/globals.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/modrinth_utils.dart';
 import 'package:morpheus_launcher_gui/utils/widget_utils.dart';
+
+import '../utils/markdown/flutter_markdown_plus.dart';
 
 class ModpackDetailView extends StatefulWidget {
   final dynamic modpack;
@@ -130,7 +131,7 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
           context,
           AppLocalizations.of(context)!.generic_error_msg,
           e.toString(),
-              () => Navigator.pop(context),
+          () => Navigator.pop(context),
         );
       }
     } finally {
@@ -238,10 +239,8 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
           _buildStats(),
           const SizedBox(height: 24),
           _buildDownloadButton(),
-          if ((_projectData?["body"] ?? '')
-              .toString()
-              .trim()
-              .isNotEmpty) ...[ // ← fix condizione
+          if ((_projectData?["body"] ?? '').toString().trim().isNotEmpty) ...[
+            // ← fix condizione
             const SizedBox(height: 24),
             _buildDescription(),
           ],
@@ -631,13 +630,13 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
         borderRadius: const BorderRadius.all(Radius.circular(6)),
         child: iconUrl != null && iconUrl.isNotEmpty
             ? CachedNetworkImage(
-          imageUrl: iconUrl,
-          width: 36,
-          height: 36,
-          fit: BoxFit.cover,
-          placeholder: (context, url) => _modIconPlaceholder(),
-          errorWidget: (context, url, error) => _modIconPlaceholder(),
-        )
+                imageUrl: iconUrl,
+                width: 36,
+                height: 36,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => _modIconPlaceholder(),
+                errorWidget: (context, url, error) => _modIconPlaceholder(),
+              )
             : _modIconPlaceholder(),
       ),
       title: Text(title, style: WidgetUtils.customTextStyle(14, FontWeight.w500, ColorUtils.primaryFontColor)),

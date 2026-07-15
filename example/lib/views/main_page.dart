@@ -15,7 +15,7 @@ import 'package:http/http.dart' as http;
 import 'package:morpheus_launcher_gui/account/account_utils.dart';
 import 'package:morpheus_launcher_gui/account/microsoft_auth.dart';
 import 'package:morpheus_launcher_gui/globals.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
 import 'package:morpheus_launcher_gui/main.dart';
 import 'package:morpheus_launcher_gui/utils/circle_utils.dart';
 import 'package:morpheus_launcher_gui/utils/glass_morphism.dart';
@@ -122,6 +122,40 @@ class _MainPageState extends State<MainPage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildResponsiveTileGrid(
+    List<Widget> children, {
+    double minTileWidth = 300,
+    double spacing = 8,
+    double runSpacing = 0,
+    int? maxColumns,
+  }) {
+    if (children.isEmpty) return const SizedBox.shrink();
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.hasBoundedWidth ? constraints.maxWidth : MediaQuery.of(context).size.width;
+        var columns = ((width + spacing) / (minTileWidth + spacing)).floor();
+        if (columns < 1) columns = 1;
+        if (columns > 1) columns = (columns - 2).clamp(1, columns);
+        if (maxColumns != null && columns > maxColumns) columns = maxColumns;
+
+        final tileWidth = (width - (spacing * (columns - 1))) / columns;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: runSpacing,
+          children: [
+            for (final child in children)
+              SizedBox(
+                width: tileWidth,
+                child: child,
+              ),
+          ],
+        );
+      },
     );
   }
 
@@ -320,19 +354,20 @@ class _MainPageState extends State<MainPage> {
               ),
             ),
           ),
-          for (var version in VersionUtils.getAllVersions())
-            if (Globals.pinnedVersions.contains(version["id"])) ...[
-              buildVanillaItem(
-                version["type"],
-                version["id"],
-                "",
-                VersionUtils.isCompatible(
+          _buildResponsiveTileGrid([
+            for (var version in VersionUtils.getAllVersions())
+              if (Globals.pinnedVersions.contains(version["id"]))
+                buildVanillaItem(
                   version["type"],
                   version["id"],
-                  context,
+                  "",
+                  VersionUtils.isCompatible(
+                    version["type"],
+                    version["id"],
+                    context,
+                  ),
                 ),
-              ),
-            ],
+          ]),
           /** Divider News/Changelog mojang */
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 5),
@@ -354,15 +389,18 @@ class _MainPageState extends State<MainPage> {
 
         /** Changelog */
         if (Globals.isNewsAvailable) ...[
-          for (var version in Globals.vanillaNewsResponse) ...[
-            if ((version["type"] == "release" && Globals.showOnlyReleases) || !Globals.showOnlyReleases) ...[
-              buildNewsItem(
-                version["title"].toString().replaceAll(": Java Edition", "").replaceAll(" Aquatic", ""),
-                version["body"],
-                version["image"]["url"],
-              ),
+          _buildResponsiveTileGrid(
+            [
+              for (var version in Globals.vanillaNewsResponse)
+                if ((version["type"] == "release" && Globals.showOnlyReleases) || !Globals.showOnlyReleases)
+                  buildNewsItem(
+                    version["title"].toString().replaceAll(": Java Edition", "").replaceAll(" Aquatic", ""),
+                    version["body"],
+                    version["image"]["url"],
+                  ),
             ],
-          ],
+            minTileWidth: 280,
+          ),
         ] else ...[
           /** quando non può mostrare le news */
           Padding(
@@ -390,7 +428,7 @@ class _MainPageState extends State<MainPage> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(0, 2, 0, 2),
       child: SizedBox(
-        width: (MediaQuery.of(context).size.width / 5) - 5,
+        width: double.infinity,
         child: Material(
           elevation: 15,
           color: ColorUtils.dynamicPrimaryForegroundColor,
@@ -430,8 +468,11 @@ class _MainPageState extends State<MainPage> {
                       ),
                       Text(
                         title,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: MediaQuery.of(context).size.width / 25,
+                          fontSize: 18,
                           fontFamily: 'Comfortaa',
                           fontWeight: FontWeight.w300,
                           color: Colors.white.withAlpha(160),
@@ -454,14 +495,19 @@ class _MainPageState extends State<MainPage> {
     return ListView(
       children: [
         if (Globals.morpheusVersionsResponse != null) ...[
-          for (var prodotto in Globals.morpheusVersionsResponse) ...[
-            buildMorpheusItem(
-              prodotto['name'],
-              prodotto['gameversion'],
-              prodotto['id'],
-              prodotto['img'],
-            ),
-          ],
+          _buildResponsiveTileGrid(
+            [
+              for (var prodotto in Globals.morpheusVersionsResponse)
+                buildMorpheusItem(
+                  prodotto['name'],
+                  prodotto['gameversion'],
+                  prodotto['id'],
+                  prodotto['img'],
+                ),
+            ],
+            minTileWidth: 340,
+            maxColumns: 2,
+          ),
         ] else ...[
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 20),
@@ -621,18 +667,20 @@ class _MainPageState extends State<MainPage> {
           ),
 
         /** Ultime versioni */
-        buildVanillaItem(
-          AppLocalizations.of(context)!.vanilla_release_title,
-          Globals.vanillaVersionsResponse != null ? Globals.vanillaVersionsResponse["latest"]["release"] : "",
-          "",
-          true,
-        ),
-        buildVanillaItem(
-          AppLocalizations.of(context)!.vanilla_snapshot_title,
-          Globals.vanillaVersionsResponse != null ? Globals.vanillaVersionsResponse["latest"]["snapshot"] : "",
-          "",
-          true,
-        ),
+        _buildResponsiveTileGrid([
+          buildVanillaItem(
+            AppLocalizations.of(context)!.vanilla_release_title,
+            Globals.vanillaVersionsResponse != null ? Globals.vanillaVersionsResponse["latest"]["release"] : "",
+            "",
+            true,
+          ),
+          buildVanillaItem(
+            AppLocalizations.of(context)!.vanilla_snapshot_title,
+            Globals.vanillaVersionsResponse != null ? Globals.vanillaVersionsResponse["latest"]["snapshot"] : "",
+            "",
+            true,
+          ),
+        ]),
         /** Separatore */
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -642,18 +690,20 @@ class _MainPageState extends State<MainPage> {
         ),
 
         /** Lista completa delle versioni solo vanilla (misto) */
-        for (var version in VersionUtils.getMinecraftVersions(false))
-          if ((version["type"] == "release" && Globals.showOnlyReleases) || !Globals.showOnlyReleases)
-            buildVanillaItem(
-              version["type"],
-              version["id"],
-              version["releaseTime"],
-              VersionUtils.isCompatible(
+        _buildResponsiveTileGrid([
+          for (var version in VersionUtils.getMinecraftVersions(false))
+            if ((version["type"] == "release" && Globals.showOnlyReleases) || !Globals.showOnlyReleases)
+              buildVanillaItem(
                 version["type"],
                 version["id"],
-                context,
+                version["releaseTime"],
+                VersionUtils.isCompatible(
+                  version["type"],
+                  version["id"],
+                  context,
+                ),
               ),
-            ),
+        ]),
       ],
     );
   }
@@ -1038,10 +1088,7 @@ class _MainPageState extends State<MainPage> {
           // Children
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: children,
-            ),
+            child: _buildResponsiveTileGrid(children),
           ),
         ],
       ),
@@ -1191,7 +1238,9 @@ class _MainPageState extends State<MainPage> {
         // ── Installed Modrinth modpacks (offline-friendly) ─────────────────
         if (installedModpacks.isNotEmpty) ...[
           _buildDivider(AppLocalizations.of(context)!.modded_modrinth_title),
-          for (final pack in installedModpacks) _buildModrinthPackItem(pack),
+          _buildResponsiveTileGrid([
+            for (final pack in installedModpacks) _buildModrinthPackItem(pack),
+          ]),
         ],
 
         // ── Installed modded versions (Forge/Fabric/etc.) ──────────────────
@@ -1205,13 +1254,15 @@ class _MainPageState extends State<MainPage> {
               style: WidgetUtils.customTextStyle(22, FontWeight.w300, ColorUtils.primaryFontColor),
             ),
           ),
-        for (var version in VersionUtils.getMinecraftVersions(true))
-          buildVanillaItem(
-            version["type"],
-            version["id"],
-            "",
-            VersionUtils.isCompatible(version["type"], version["id"], context),
-          ),
+        _buildResponsiveTileGrid([
+          for (var version in VersionUtils.getMinecraftVersions(true))
+            buildVanillaItem(
+              version["type"],
+              version["id"],
+              "",
+              VersionUtils.isCompatible(version["type"], version["id"], context),
+            ),
+        ]),
 
         // ── Available modloader versions ───────────────────────────────────
         _buildDivider(AppLocalizations.of(context)!.modded_available_versions_title),
@@ -1741,7 +1792,7 @@ class _MainPageState extends State<MainPage> {
                               ),
                             ),
                             items: Globals.WindowThemes.map(
-                              (String item) => DropdownMenuItem<String>(
+                              (String item) => DropdownItem<String>(
                                 value: item,
                                 child: Text(
                                   item,
@@ -1753,7 +1804,7 @@ class _MainPageState extends State<MainPage> {
                                 ),
                               ),
                             ).toList(),
-                            value: _themeNotifier.value,
+                            valueListenable: _themeNotifier,
                             onChanged: (String? value) async {
                               _themeNotifier.value = value;
                               Globals.selectedWindowTheme = value!;
@@ -1931,7 +1982,7 @@ class _MainPageState extends State<MainPage> {
                                 ColorUtils.dynamicAccentColor,
                                 Colors.white,
                                 () async {
-                                  FilePickerResult? result = await FilePicker.platform.pickFiles();
+                                  FilePickerResult? result = await FilePicker.pickFiles();
                                   if (result != null) {
                                     File file = File(result.files.single.path!);
                                     Globals.javapathcontroller.text = file.path.replaceAll("\\", "/");
@@ -2256,7 +2307,7 @@ class _MainPageState extends State<MainPage> {
               ColorUtils.dynamicSecondaryForegroundColor,
               Colors.white,
               () async {
-                final result = await FilePicker.platform.pickFiles(
+                final result = await FilePicker.pickFiles(
                   type: FileType.custom,
                   allowedExtensions: ['json'],
                 );
@@ -2275,7 +2326,7 @@ class _MainPageState extends State<MainPage> {
               ColorUtils.dynamicSecondaryForegroundColor,
               Colors.white,
               () async {
-                final result = await FilePicker.platform.saveFile(
+                final result = await FilePicker.saveFile(
                   dialogTitle: 'Save accounts as JSON',
                   fileName: 'accounts_plain.json',
                   type: FileType.custom,
@@ -2426,7 +2477,7 @@ class _MainPageState extends State<MainPage> {
                       ),
                       onPressed: () async {
                         Navigator.pop(context);
-                        FilePickerResult? result = await FilePicker.platform.pickFiles();
+                        FilePickerResult? result = await FilePicker.pickFiles();
                         if (result != null) {
                           File file = File(result.files.single.path!);
                           WidgetUtils.showMessageDialog(
@@ -2449,7 +2500,7 @@ class _MainPageState extends State<MainPage> {
                       ),
                       onPressed: () async {
                         Navigator.pop(context);
-                        FilePickerResult? result = await FilePicker.platform.pickFiles();
+                        FilePickerResult? result = await FilePicker.pickFiles();
                         if (result != null) {
                           File file = File(result.files.single.path!);
                           WidgetUtils.showMessageDialog(
@@ -2709,13 +2760,18 @@ class _MainPageState extends State<MainPage> {
       children: [
         if (Globals.accounts.isNotEmpty) ...[
           /** Lista degli account */
-          for (var account in Globals.accounts)
-            buildAccountEntry(
-              account.username,
-              account.isPremium,
-              account.isElyBy,
-              Globals.accounts.indexOf(account),
-            ),
+          _buildResponsiveTileGrid(
+            [
+              for (var account in Globals.accounts)
+                buildAccountEntry(
+                  account.username,
+                  account.isPremium,
+                  account.isElyBy,
+                  Globals.accounts.indexOf(account),
+                ),
+            ],
+            minTileWidth: 260,
+          ),
         ] else ...[
           /** mostra il messaggio quando non ci sono account */
           Padding(

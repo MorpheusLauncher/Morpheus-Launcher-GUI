@@ -129,6 +129,8 @@ void flutter_acrylic_plugin_register_with_registrar(
   fl_method_channel_set_method_call_handler(
       channel, method_call_cb, g_object_ref(plugin), g_object_unref);
   FlView* view = fl_plugin_registrar_get_view(registrar);
+  GdkRGBA transparent = { 0.0, 0.0, 0.0, 0.0 };
+  fl_view_set_background_color(view, &transparent);
   GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(view)));
   GdkScreen* screen;
   GdkVisual* visual;

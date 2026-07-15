@@ -14,7 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:system_theme/system_theme.dart';
 
 class Globals {
-  static const buildVersion = "Ver 4.0.0";
+  static const buildVersion = "Ver 4.1.0";
   static const windowTitle = "Morpheus Launcher";
   static const borderRadius = 14.0;
   static const ms_client_id = "c2346197-42f1-4461-91a9-20f947a1cca8"; // if you fork this project, you are constrained to change this

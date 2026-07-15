@@ -3,13 +3,12 @@ library account_file;
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:encrypt/encrypt.dart' as enc;
 import 'package:flutter/foundation.dart';
-import 'package:morpheus_launcher_gui/account/account_utils.dart';
 import 'package:morpheus_launcher_gui/account/account_key_manager.dart';
+import 'package:morpheus_launcher_gui/account/account_utils.dart';
 
 // ---------------------------------------------------------------------------
 // AES-GCM con IV casuale per ogni operazione
@@ -43,9 +42,7 @@ String _aesGcmDecrypt(String b64, Uint8List key) {
 
 Uint8List _deriveTokenKey(Uint8List fileKey) {
   final input = [...fileKey, ...utf8.encode('morpheus-token-key-v1')];
-  return Uint8List.fromList(sha256
-      .convert(input)
-      .bytes);
+  return Uint8List.fromList(sha256.convert(input).bytes);
 }
 
 // ---------------------------------------------------------------------------
@@ -77,8 +74,10 @@ String _readEncryptedFile(File file, Uint8List fileKey) {
 // API pubblica — ora async
 // ---------------------------------------------------------------------------
 
-Future<void> saveAccountListToJson(List<Account> accountList,
-    String filePath,) async {
+Future<void> saveAccountListToJson(
+  List<Account> accountList,
+  String filePath,
+) async {
   final fileKey = await loadOrCreateFileKey();
   final tokenKey = _deriveTokenKey(fileKey);
 

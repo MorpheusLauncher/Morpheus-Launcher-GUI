@@ -4,7 +4,7 @@ import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:morpheus_launcher_gui/globals.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/news_utils.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/version_utils.dart';
 import 'package:morpheus_launcher_gui/utils/widget_utils.dart';

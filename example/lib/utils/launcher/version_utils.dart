@@ -5,7 +5,7 @@ import 'dart:io';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:http/http.dart' as http;
 import 'package:morpheus_launcher_gui/globals.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
 
 class VersionUtils {
   static Future<List<String>> getPinnedVersions() async {

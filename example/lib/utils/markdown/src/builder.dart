@@ -420,15 +420,11 @@ class MarkdownBuilder implements md.NodeVisitor {
           }
           child = Row(
             mainAxisSize: fitContent ? MainAxisSize.min : MainAxisSize.max,
-            textBaseline:
-                listItemCrossAxisAlignment == MarkdownListItemCrossAxisAlignment.start ? null : TextBaseline.alphabetic,
-            crossAxisAlignment: listItemCrossAxisAlignment == MarkdownListItemCrossAxisAlignment.start
-                ? CrossAxisAlignment.start
-                : CrossAxisAlignment.baseline,
+            textBaseline: listItemCrossAxisAlignment == MarkdownListItemCrossAxisAlignment.start ? null : TextBaseline.alphabetic,
+            crossAxisAlignment: listItemCrossAxisAlignment == MarkdownListItemCrossAxisAlignment.start ? CrossAxisAlignment.start : CrossAxisAlignment.baseline,
             children: <Widget>[
               SizedBox(
-                width:
-                    styleSheet.listIndent! + styleSheet.listBulletPadding!.left + styleSheet.listBulletPadding!.right,
+                width: styleSheet.listIndent! + styleSheet.listBulletPadding!.left + styleSheet.listBulletPadding!.right,
                 child: bullet,
               ),
               Flexible(
@@ -555,8 +551,7 @@ class MarkdownBuilder implements md.NodeVisitor {
               style: textSpan.style?.copyWith(
                 fontFeatures: <FontFeature>[
                   const FontFeature.enable('sups'),
-                  if (styleSheet.superscriptFontFeatureTag != null)
-                    FontFeature.enable(styleSheet.superscriptFontFeatureTag!),
+                  if (styleSheet.superscriptFontFeatureTag != null) FontFeature.enable(styleSheet.superscriptFontFeatureTag!),
                 ],
               ),
             ),
@@ -687,12 +682,9 @@ class MarkdownBuilder implements md.NodeVisitor {
   }
 
   Widget _buildTableCell(List<Widget?> children, {TextAlign? textAlign, bool isHeader = false}) {
-    final EdgeInsets cellPadding = isHeader && styleSheet.tableHeadCellsPadding != null
-        ? styleSheet.tableHeadCellsPadding!
-        : styleSheet.tableCellsPadding!;
+    final EdgeInsets cellPadding = isHeader && styleSheet.tableHeadCellsPadding != null ? styleSheet.tableHeadCellsPadding! : styleSheet.tableCellsPadding!;
 
-    final TextStyle cellStyle =
-        isHeader && styleSheet.tableHead != null ? styleSheet.tableHead! : styleSheet.tableBody!;
+    final TextStyle cellStyle = isHeader && styleSheet.tableHead != null ? styleSheet.tableHead! : styleSheet.tableBody!;
 
     return TableCell(
       child: Padding(
@@ -807,12 +799,7 @@ class MarkdownBuilder implements md.NodeVisitor {
 
   // Accesses the TextSpan property correctly depending on the widget type.
   // Returns null if not a valid (text) widget.
-  InlineSpan? _getInlineSpanFromText(Widget widget) => switch (widget) {
-        SelectableText() => widget.textSpan,
-        Text() => widget.textSpan,
-        RichText() => widget.text,
-        _ => null
-      };
+  InlineSpan? _getInlineSpanFromText(Widget widget) => switch (widget) { SelectableText() => widget.textSpan, Text() => widget.textSpan, RichText() => widget.text, _ => null };
 
   /// Merges adjacent [TextSpan] children.
   /// Also forces a specific [TextAlign] regardless of merging.
@@ -956,9 +943,7 @@ class MarkdownBuilder implements md.NodeVisitor {
         continue;
       }
 
-      final bool matchStyle = nextChild.recognizer == previous.recognizer &&
-          nextChild.semanticsLabel == previous.semanticsLabel &&
-          nextChild.style == previous.style;
+      final bool matchStyle = nextChild.recognizer == previous.recognizer && nextChild.semanticsLabel == previous.semanticsLabel && nextChild.style == previous.style;
 
       if (matchStyle) {
         mergedSpans.add(TextSpan(
@@ -985,10 +970,7 @@ class MarkdownBuilder implements md.NodeVisitor {
         text,
         textScaler: styleSheet.textScaler,
         textAlign: textAlign ?? TextAlign.start,
-        onSelectionChanged: onSelectionChanged != null
-            ? (TextSelection selection, SelectionChangedCause? cause) =>
-                onSelectionChanged!(text.text, selection, cause)
-            : null,
+        onSelectionChanged: onSelectionChanged != null ? (TextSelection selection, SelectionChangedCause? cause) => onSelectionChanged!(text.text, selection, cause) : null,
         onTap: onTapText,
         key: k,
       );
