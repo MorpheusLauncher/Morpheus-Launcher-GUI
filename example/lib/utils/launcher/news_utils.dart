@@ -31,7 +31,8 @@ class NewsUtils {
     }
     for (var newEntry in newJson["entries"]) {
       if (!oldEntriesById.containsKey(newEntry["id"])) {
-        newEntry["body"] = "${newEntry["shortText"]}";
+        newEntry["body"] = newEntry["shortText"]?.toString() ?? "";
+        newEntry["detailPath"] = "/v2/${newEntry["contentPath"]}";
         mergedEntries.add(newEntry);
       }
     }

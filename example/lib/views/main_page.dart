@@ -397,6 +397,7 @@ class _MainPageState extends State<MainPage> {
                     version["title"].toString().replaceAll(": Java Edition", "").replaceAll(" Aquatic", ""),
                     version["body"],
                     version["image"]["url"],
+                    detailPath: version["detailPath"]?.toString(),
                   ),
             ],
             minTileWidth: 280,
@@ -423,8 +424,9 @@ class _MainPageState extends State<MainPage> {
   Widget buildNewsItem(
     String title,
     String body,
-    String url,
-  ) {
+    String url, {
+    String? detailPath,
+  }) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(0, 2, 0, 2),
       child: SizedBox(
@@ -445,6 +447,7 @@ class _MainPageState extends State<MainPage> {
                         title: title,
                         body: body,
                         url: url,
+                        detailPath: detailPath,
                       ),
                     ),
                   );
