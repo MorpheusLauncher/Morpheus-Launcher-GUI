@@ -93,6 +93,43 @@ class AppLocalizationsEn extends AppLocalizations {
   String get modpack_unknown_mod => 'Unknown mod';
 
   @override
+  String get modpack_launch => 'Launch';
+
+  @override
+  String get modpack_launch_button => 'Launch modpack';
+
+  @override
+  String get modpack_remove => 'Remove';
+
+  @override
+  String get modpack_remove_button => 'Remove modpack';
+
+  @override
+  String get modpack_remove_confirmation =>
+      'Remove this modpack and all its files?';
+
+  @override
+  String get modpack_compatibility => 'Compatibility';
+
+  @override
+  String get modpack_minecraft_java => 'Minecraft: Java Edition';
+
+  @override
+  String get modpack_platforms => 'Platforms';
+
+  @override
+  String get modpack_supported_environments => 'Supported environments';
+
+  @override
+  String get modpack_client_server => 'Client & server';
+
+  @override
+  String get modpack_client_side => 'Client-side';
+
+  @override
+  String get modpack_tags => 'Tags';
+
+  @override
   String get settings_only_release_switch => 'Show only releases';
 
   @override

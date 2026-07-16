@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:morpheus_launcher_gui/globals.dart';
 import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/launch_utils.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/modrinth_utils.dart';
 import 'package:morpheus_launcher_gui/utils/widget_utils.dart';
 
@@ -50,12 +51,15 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
   Future<void> _fetchDetails() async {
     final projectId = widget.modpack["project_id"];
     try {
-      final projectRes = await http.get(Uri.parse("${Urls.modrinthApiURL}/project/$projectId"));
-      final versionsRes = await http.get(Uri.parse("${Urls.modrinthApiURL}/project/$projectId/version"));
+      final projectRes = await http
+          .get(Uri.parse("${Urls.modrinthApiURL}/project/$projectId"));
+      final versionsRes = await http
+          .get(Uri.parse("${Urls.modrinthApiURL}/project/$projectId/version"));
 
       if (projectRes.statusCode == 200 && versionsRes.statusCode == 200) {
         _projectData = json.decode(utf8.decode(projectRes.bodyBytes));
-        final versions = json.decode(utf8.decode(versionsRes.bodyBytes)) as List;
+        final versions =
+            json.decode(utf8.decode(versionsRes.bodyBytes)) as List;
         if (versions.isNotEmpty) {
           _latestVersion = versions.first;
           _dependencies = _latestVersion["dependencies"] ?? [];
@@ -73,11 +77,16 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
   Future<void> _fetchModDetails() async {
     if (mounted) setState(() => _isLoadingMods = true);
     try {
-      final ids = _dependencies.map<String?>((dep) => dep["project_id"]?.toString()).whereType<String>().toSet().toList();
+      final ids = _dependencies
+          .map<String?>((dep) => dep["project_id"]?.toString())
+          .whereType<String>()
+          .toSet()
+          .toList();
       if (ids.isEmpty) return;
 
       final idsParam = Uri.encodeQueryComponent(json.encode(ids));
-      final res = await http.get(Uri.parse("${Urls.modrinthApiURL}/projects?ids=$idsParam"));
+      final res = await http
+          .get(Uri.parse("${Urls.modrinthApiURL}/projects?ids=$idsParam"));
       if (res.statusCode == 200) {
         final projects = json.decode(res.body) as List;
         final map = <String, dynamic>{};
@@ -147,9 +156,9 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
       context,
       title,
       <Widget>[
-        const Text(
-          'Remove this modpack and all its files?',
-          style: TextStyle(
+        Text(
+          AppLocalizations.of(context)!.modpack_remove_confirmation,
+          style: const TextStyle(
             fontSize: 14,
             fontFamily: 'Comfortaa',
             fontWeight: FontWeight.w500,
@@ -175,9 +184,9 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
             await ModrinthUtils.removeInstance(slug);
             if (mounted) setState(() => _isInstalled = false);
           },
-          child: const Text(
-            'Remove',
-            style: TextStyle(
+          child: Text(
+            AppLocalizations.of(context)!.modpack_remove,
+            style: const TextStyle(
               fontSize: 14,
               fontFamily: 'Comfortaa',
               fontWeight: FontWeight.w700,
@@ -186,6 +195,72 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
           ),
         ),
       ],
+    );
+  }
+
+  Future<void> _launch() async {
+    final slug = widget.modpack["slug"]?.toString() ?? '';
+    if (slug.isEmpty || !_isInstalled) return;
+
+    final dependencies = ModrinthUtils.getDependencies(slug);
+    final indexEntry = ModrinthUtils.getIndexEntry(slug);
+    final minecraftVersion =
+        dependencies['minecraft'] ?? indexEntry?['minecraft']?.toString() ?? '';
+    final loader = indexEntry?['loader']?.toString() ?? '';
+
+    if (minecraftVersion.isEmpty) return;
+
+    String gameVersion;
+    var isModded = true;
+
+    switch (loader) {
+      case 'fabric':
+        final loaderVersion = dependencies['fabric-loader'] ?? '';
+        gameVersion = loaderVersion.isNotEmpty
+            ? 'fabric-loader-$loaderVersion-$minecraftVersion'
+            : minecraftVersion;
+        break;
+      case 'forge':
+        final loaderVersion = dependencies['forge'] ?? '';
+        gameVersion = loaderVersion.isNotEmpty
+            ? '$minecraftVersion-forge-$loaderVersion'
+            : minecraftVersion;
+        break;
+      case 'quilt':
+        final loaderVersion = dependencies['quilt-loader'] ?? '';
+        gameVersion = loaderVersion.isNotEmpty
+            ? 'quilt-loader-$loaderVersion-$minecraftVersion'
+            : minecraftVersion;
+        break;
+      case 'neoforge':
+        final loaderVersion = dependencies['neoforge'] ?? '';
+        gameVersion = loaderVersion.isNotEmpty
+            ? 'neoforge-$loaderVersion'
+            : minecraftVersion;
+        break;
+      default:
+        gameVersion = minecraftVersion;
+        isModded = false;
+    }
+
+    final config = LaunchConfig(
+      gameVersion: gameVersion,
+      productId: null,
+      isModded: isModded,
+      realGameVersion: minecraftVersion,
+      enableClassPath: LaunchUtils.shouldEnableClassPath(gameVersion, true),
+      startOnFirstThread:
+          LaunchUtils.shouldUseStartOnFirstThread(minecraftVersion),
+    );
+
+    await LaunchUtils.launchMinecraft(
+      context,
+      config,
+      gameDirectory: ModrinthUtils.gameDir(slug),
+      onAccountRequired: () {
+        Globals.navSelected = NavSection.accounts;
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      },
     );
   }
 
@@ -202,7 +277,11 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
           drawTitleCustomBar(),
           _buildTopBar(context),
           Expanded(
-            child: _isLoading ? Center(child: Image.asset('assets/morpheus-animated.gif', width: 64)) : _buildContent(),
+            child: _isLoading
+                ? Center(
+                    child:
+                        Image.asset('assets/morpheus-animated.gif', width: 64))
+                : _buildContent(),
           ),
         ],
       ),
@@ -210,25 +289,47 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
   }
 
   Widget _buildTopBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          IconButton(
-            icon: Icon(Icons.arrow_back, color: ColorUtils.primaryFontColor),
-            onPressed: () => Navigator.pop(context),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            widget.modpack["title"] ?? AppLocalizations.of(context)!.modpack_details_title,
-            style: WidgetUtils.customTextStyle(24, FontWeight.w600, ColorUtils.primaryFontColor),
-          ),
-        ],
+    return LayoutBuilder(
+      builder: (context, constraints) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            IconButton(
+              icon: Icon(Icons.arrow_back, color: ColorUtils.primaryFontColor),
+              onPressed: () => Navigator.pop(context),
+            ),
+            if (constraints.maxWidth < 950) ...[
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  widget.modpack["title"] ??
+                      AppLocalizations.of(context)!.modpack_details_title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: WidgetUtils.customTextStyle(
+                      24, FontWeight.w600, ColorUtils.primaryFontColor),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildContent() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= 950) {
+          return _buildDesktopContent();
+        }
+
+        return _buildCompactContent();
+      },
+    );
+  }
+
+  Widget _buildCompactContent() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -238,66 +339,432 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
           const SizedBox(height: 24),
           _buildStats(),
           const SizedBox(height: 24),
-          _buildDownloadButton(),
+          _buildActions(),
           if ((_projectData?["body"] ?? '').toString().trim().isNotEmpty) ...[
-            // ← fix condizione
             const SizedBox(height: 24),
             _buildDescription(),
           ],
-          const SizedBox(height: 24),
-          if (_dependencies.isNotEmpty) _buildModList(),
+          if (_dependencies.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            _buildModList(),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildHeader() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ClipRRect(
-          borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
-          child: CachedNetworkImage(
-            imageUrl: widget.modpack["icon_url"] ?? "",
-            width: 120,
-            height: 120,
-            fit: BoxFit.cover,
-            placeholder: (context, url) => Container(color: Colors.white.withOpacity(0.05)),
-            errorWidget: (context, url, error) => Icon(Icons.apps, size: 60, color: ColorUtils.secondaryFontColor),
-          ),
-        ),
-        const SizedBox(width: 20),
-        Expanded(
+  Widget _buildDesktopContent() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1500),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(widget.modpack["title"] ?? "", style: WidgetUtils.customTextStyle(28, FontWeight.bold, ColorUtils.primaryFontColor)),
-              const SizedBox(height: 8),
-              Text(
-                AppLocalizations.of(context)!.modpack_author_by(
-                  widget.modpack["author"] ?? AppLocalizations.of(context)!.modpack_unknown_author,
-                ),
-                style: WidgetUtils.customTextStyle(16, FontWeight.w400, ColorUtils.secondaryFontColor),
+              _buildDesktopHero(),
+              const SizedBox(height: 18),
+              Divider(
+                color: ColorUtils.secondaryFontColor.withValues(alpha: 0.14),
+                height: 1,
               ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: (widget.modpack["categories"] as List? ?? []).map<Widget>((cat) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: ColorUtils.dynamicAccentColor.withOpacity(0.1),
-                      borderRadius: const BorderRadius.all(Radius.circular(20)),
-                      border: Border.all(color: ColorUtils.dynamicAccentColor.withOpacity(0.3)),
-                    ),
-                    child: Text(cat.toString().toUpperCase(), style: WidgetUtils.customTextStyle(10, FontWeight.bold, ColorUtils.dynamicAccentColor)),
-                  );
-                }).toList(),
+              const SizedBox(height: 18),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: (_projectData?["body"] ?? '')
+                            .toString()
+                            .trim()
+                            .isNotEmpty
+                        ? _buildDescription()
+                        : const SizedBox.shrink(),
+                  ),
+                  const SizedBox(width: 24),
+                  SizedBox(width: 310, child: _buildDesktopSidebar()),
+                ],
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopHero() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius:
+                const BorderRadius.all(Radius.circular(Globals.borderRadius)),
+            child: CachedNetworkImage(
+              imageUrl: widget.modpack["icon_url"] ?? "",
+              width: 96,
+              height: 96,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => Container(
+                width: 96,
+                height: 96,
+                color: ColorUtils.dynamicSecondaryForegroundColor,
+              ),
+              errorWidget: (context, url, error) => Container(
+                width: 96,
+                height: 96,
+                color: ColorUtils.dynamicSecondaryForegroundColor,
+                child: Icon(
+                  Icons.apps,
+                  size: 42,
+                  color: ColorUtils.secondaryFontColor,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 18),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.modpack["title"] ?? "",
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: WidgetUtils.customTextStyle(
+                    26,
+                    FontWeight.bold,
+                    ColorUtils.primaryFontColor,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.modpack["description"]?.toString() ?? '',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: WidgetUtils.customTextStyle(
+                    14,
+                    FontWeight.w400,
+                    ColorUtils.secondaryFontColor,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  AppLocalizations.of(context)!.modpack_author_by(
+                    widget.modpack["author"] ??
+                        AppLocalizations.of(context)!.modpack_unknown_author,
+                  ),
+                  style: WidgetUtils.customTextStyle(
+                    13,
+                    FontWeight.w400,
+                    ColorUtils.secondaryFontColor,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.download,
+                        size: 16, color: ColorUtils.secondaryFontColor),
+                    const SizedBox(width: 5),
+                    Text(
+                      _formatNumber(widget.modpack["downloads"]),
+                      style: WidgetUtils.customTextStyle(
+                          13, FontWeight.w500, ColorUtils.secondaryFontColor),
+                    ),
+                    const SizedBox(width: 14),
+                    Flexible(
+                      child: Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: (widget.modpack["categories"] as List? ?? [])
+                            .take(4)
+                            .map<Widget>((category) => _buildTag(
+                                  category.toString(),
+                                ))
+                            .toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 24),
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: SizedBox(
+              width: 280,
+              child: _buildActions(horizontal: true),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopSidebar() {
+    final gameVersions = (_projectData?["game_versions"] as List? ?? [])
+        .map((version) => version.toString())
+        .toList()
+        .reversed
+        .take(10);
+    final loaders = (_projectData?["loaders"] as List? ?? [])
+        .map((loader) => loader.toString());
+    final categories = (widget.modpack["categories"] as List? ?? [])
+        .map((category) => category.toString());
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildSidebarCard(
+          AppLocalizations.of(context)!.modpack_compatibility,
+          [
+            Text(
+              AppLocalizations.of(context)!.modpack_minecraft_java,
+              style: WidgetUtils.customTextStyle(
+                  13, FontWeight.w400, ColorUtils.secondaryFontColor),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children:
+                  gameVersions.map((version) => _buildTag(version)).toList(),
+            ),
+            if (loaders.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Text(
+                AppLocalizations.of(context)!.modpack_platforms,
+                style: WidgetUtils.customTextStyle(
+                    13, FontWeight.w400, ColorUtils.secondaryFontColor),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: loaders
+                    .map((loader) => _buildTag(loader, accent: true))
+                    .toList(),
+              ),
+            ],
+            const SizedBox(height: 14),
+            Text(
+              AppLocalizations.of(context)!.modpack_supported_environments,
+              style: WidgetUtils.customTextStyle(
+                  13, FontWeight.w400, ColorUtils.secondaryFontColor),
+            ),
+            const SizedBox(height: 8),
+            _buildTag(
+              _projectData?["server_side"] == "required"
+                  ? AppLocalizations.of(context)!.modpack_client_server
+                  : AppLocalizations.of(context)!.modpack_client_side,
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (categories.isNotEmpty)
+          _buildSidebarCard(
+            AppLocalizations.of(context)!.modpack_tags,
+            [
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children:
+                    categories.map((category) => _buildTag(category)).toList(),
+              ),
+            ],
+          ),
+        if (categories.isNotEmpty) const SizedBox(height: 16),
+        if (_dependencies.isNotEmpty) _buildModList(),
+      ],
+    );
+  }
+
+  Widget _buildSidebarCard(String title, List<Widget> children) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: ColorUtils.dynamicPrimaryForegroundColor,
+        borderRadius:
+            const BorderRadius.all(Radius.circular(Globals.borderRadius)),
+        border: Border.all(
+          color: ColorUtils.secondaryFontColor.withValues(alpha: 0.12),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: WidgetUtils.customTextStyle(
+                17, FontWeight.bold, ColorUtils.primaryFontColor),
+          ),
+          const SizedBox(height: 14),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTag(String text, {bool accent = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: accent
+            ? ColorUtils.dynamicAccentColor.withValues(alpha: 0.13)
+            : ColorUtils.dynamicSecondaryForegroundColor,
+        borderRadius: const BorderRadius.all(Radius.circular(16)),
+        border: Border.all(
+          color: accent
+              ? ColorUtils.dynamicAccentColor.withValues(alpha: 0.3)
+              : ColorUtils.secondaryFontColor.withValues(alpha: 0.12),
+        ),
+      ),
+      child: Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: WidgetUtils.customTextStyle(
+          11,
+          FontWeight.w500,
+          accent
+              ? ColorUtils.dynamicAccentColor
+              : ColorUtils.secondaryFontColor,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActions({bool horizontal = false}) {
+    if (!_isInstalled || _isInstalling) return _buildDownloadButton();
+
+    final launchButton = SizedBox(
+      height: 55,
+      child: ElevatedButton.icon(
+        onPressed: _launch,
+        icon: const Icon(Icons.rocket_launch, size: 22, color: Colors.white),
+        label: Text(
+          horizontal
+              ? AppLocalizations.of(context)!.modpack_launch
+              : AppLocalizations.of(context)!.modpack_launch_button,
+          style: WidgetUtils.customTextStyle(16, FontWeight.bold, Colors.white),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: ColorUtils.dynamicAccentColor,
+          elevation: 0,
+          shape: const RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.all(Radius.circular(Globals.borderRadius)),
+          ),
+        ),
+      ),
+    );
+
+    if (horizontal) {
+      return Row(
+        children: [
+          Expanded(child: launchButton),
+          const SizedBox(width: 10),
+          _buildDownloadButton(compact: true),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        launchButton,
+        const SizedBox(height: 10),
+        _buildDownloadButton(),
+      ],
+    );
+  }
+
+  Widget _buildHeader({bool compact = false}) {
+    final image = ClipRRect(
+      borderRadius:
+          const BorderRadius.all(Radius.circular(Globals.borderRadius)),
+      child: CachedNetworkImage(
+        imageUrl: widget.modpack["icon_url"] ?? "",
+        width: compact ? 150 : 120,
+        height: compact ? 150 : 120,
+        fit: BoxFit.cover,
+        placeholder: (context, url) =>
+            Container(color: Colors.white.withOpacity(0.05)),
+        errorWidget: (context, url, error) =>
+            Icon(Icons.apps, size: 60, color: ColorUtils.secondaryFontColor),
+      ),
+    );
+
+    final information = Column(
+      crossAxisAlignment:
+          compact ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      children: [
+        Text(
+          widget.modpack["title"] ?? "",
+          textAlign: compact ? TextAlign.center : TextAlign.start,
+          style: WidgetUtils.customTextStyle(
+              28, FontWeight.bold, ColorUtils.primaryFontColor),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          AppLocalizations.of(context)!.modpack_author_by(
+            widget.modpack["author"] ??
+                AppLocalizations.of(context)!.modpack_unknown_author,
+          ),
+          textAlign: compact ? TextAlign.center : TextAlign.start,
+          style: WidgetUtils.customTextStyle(
+              16, FontWeight.w400, ColorUtils.secondaryFontColor),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          alignment: compact ? WrapAlignment.center : WrapAlignment.start,
+          spacing: 8,
+          runSpacing: 8,
+          children:
+              (widget.modpack["categories"] as List? ?? []).map<Widget>((cat) {
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: ColorUtils.dynamicAccentColor.withOpacity(0.1),
+                borderRadius: const BorderRadius.all(Radius.circular(20)),
+                border: Border.all(
+                    color: ColorUtils.dynamicAccentColor.withOpacity(0.3)),
+              ),
+              child: Text(cat.toString().toUpperCase(),
+                  style: WidgetUtils.customTextStyle(
+                      10, FontWeight.bold, ColorUtils.dynamicAccentColor)),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+
+    if (compact) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: ColorUtils.dynamicPrimaryForegroundColor,
+          borderRadius:
+              const BorderRadius.all(Radius.circular(Globals.borderRadius)),
+        ),
+        child: Column(
+          children: [
+            image,
+            const SizedBox(height: 18),
+            information,
+          ],
+        ),
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        image,
+        const SizedBox(width: 20),
+        Expanded(child: information),
       ],
     );
   }
@@ -307,15 +774,30 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
       padding: const EdgeInsets.symmetric(vertical: 20),
       decoration: BoxDecoration(
         color: ColorUtils.dynamicPrimaryForegroundColor,
-        borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))],
+        borderRadius:
+            const BorderRadius.all(Radius.circular(Globals.borderRadius)),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4))
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatItem(Icons.download, AppLocalizations.of(context)!.modpack_stats_downloads, _formatNumber(widget.modpack["downloads"])),
-          _buildStatItem(Icons.update, AppLocalizations.of(context)!.modpack_stats_updated, _formatDate(widget.modpack["date_modified"])),
-          _buildStatItem(Icons.sd_storage, AppLocalizations.of(context)!.modpack_stats_size, _formatSize(_getFileSize())),
+          _buildStatItem(
+              Icons.download,
+              AppLocalizations.of(context)!.modpack_stats_downloads,
+              _formatNumber(widget.modpack["downloads"])),
+          _buildStatItem(
+              Icons.update,
+              AppLocalizations.of(context)!.modpack_stats_updated,
+              _formatDate(widget.modpack["date_modified"])),
+          _buildStatItem(
+              Icons.sd_storage,
+              AppLocalizations.of(context)!.modpack_stats_size,
+              _formatSize(_getFileSize())),
         ],
       ),
     );
@@ -326,22 +808,27 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
       children: [
         Icon(icon, color: ColorUtils.dynamicAccentColor, size: 24),
         const SizedBox(height: 8),
-        Text(label.toUpperCase(), style: WidgetUtils.customTextStyle(10, FontWeight.w500, ColorUtils.secondaryFontColor)),
+        Text(label.toUpperCase(),
+            style: WidgetUtils.customTextStyle(
+                10, FontWeight.w500, ColorUtils.secondaryFontColor)),
         const SizedBox(height: 4),
-        Text(value, style: WidgetUtils.customTextStyle(16, FontWeight.w600, ColorUtils.primaryFontColor)),
+        Text(value,
+            style: WidgetUtils.customTextStyle(
+                16, FontWeight.w600, ColorUtils.primaryFontColor)),
       ],
     );
   }
 
   /// Three states: installing (progress bar) → installed (Remove) → not installed (Download).
-  Widget _buildDownloadButton() {
+  Widget _buildDownloadButton({bool compact = false}) {
     // ── Installing ─────────────────────────────────────────────────────────
     if (_isInstalling) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: ColorUtils.dynamicPrimaryForegroundColor,
-          borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
+          borderRadius:
+              const BorderRadius.all(Radius.circular(Globals.borderRadius)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -354,13 +841,15 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
                     _installStatus,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: WidgetUtils.customTextStyle(13, FontWeight.w400, ColorUtils.secondaryFontColor),
+                    style: WidgetUtils.customTextStyle(
+                        13, FontWeight.w400, ColorUtils.secondaryFontColor),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   '${(_installProgress * 100).toInt()}%',
-                  style: WidgetUtils.customTextStyle(13, FontWeight.w600, ColorUtils.primaryFontColor),
+                  style: WidgetUtils.customTextStyle(
+                      13, FontWeight.w600, ColorUtils.primaryFontColor),
                 ),
               ],
             ),
@@ -371,7 +860,8 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
                 value: _installProgress,
                 minHeight: 8,
                 backgroundColor: ColorUtils.dynamicSecondaryForegroundColor,
-                valueColor: AlwaysStoppedAnimation<Color>(ColorUtils.dynamicAccentColor),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                    ColorUtils.dynamicAccentColor),
               ),
             ),
           ],
@@ -381,18 +871,52 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
 
     // ── Already installed ──────────────────────────────────────────────────
     if (_isInstalled) {
+      if (compact) {
+        return SizedBox.square(
+          dimension: 55,
+          child: Tooltip(
+            message: AppLocalizations.of(context)!.modpack_remove_button,
+            child: GestureDetector(
+              onTap: _uninstall,
+              child: MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: Container(
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
+                    color: Colors.redAccent,
+                    borderRadius: BorderRadius.all(
+                      Radius.circular(Globals.borderRadius),
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.delete_outline,
+                    size: 22,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
       return SizedBox(
         width: double.infinity,
         height: 55,
         child: ElevatedButton.icon(
           onPressed: _uninstall,
           icon: const Icon(Icons.delete_outline, size: 22, color: Colors.white),
-          label: Text('Remove modpack', style: WidgetUtils.customTextStyle(16, FontWeight.bold, Colors.white)),
+          label: Text(
+            AppLocalizations.of(context)!.modpack_remove_button,
+            style:
+                WidgetUtils.customTextStyle(16, FontWeight.bold, Colors.white),
+          ),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.redAccent,
             elevation: 0,
             shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(Globals.borderRadius)),
+              borderRadius:
+                  BorderRadius.all(Radius.circular(Globals.borderRadius)),
             ),
           ),
         ),
@@ -414,7 +938,8 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
           backgroundColor: ColorUtils.dynamicAccentColor,
           elevation: 0,
           shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(Globals.borderRadius)),
+            borderRadius:
+                BorderRadius.all(Radius.circular(Globals.borderRadius)),
           ),
         ),
       ),
@@ -432,13 +957,16 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(AppLocalizations.of(context)!.modpack_description_title, style: WidgetUtils.customTextStyle(20, FontWeight.bold, ColorUtils.primaryFontColor)),
+        Text(AppLocalizations.of(context)!.modpack_description_title,
+            style: WidgetUtils.customTextStyle(
+                20, FontWeight.bold, ColorUtils.primaryFontColor)),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: ColorUtils.dynamicPrimaryForegroundColor,
-            borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
+            borderRadius:
+                const BorderRadius.all(Radius.circular(Globals.borderRadius)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -490,26 +1018,36 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
           decoration: BoxDecoration(
             color: ColorUtils.dynamicSecondaryForegroundColor.withOpacity(0.25),
             borderRadius: const BorderRadius.all(Radius.circular(10)),
-            border: Border.all(color: ColorUtils.dynamicAccentColor.withOpacity(0.18), width: 1),
+            border: Border.all(
+                color: ColorUtils.dynamicAccentColor.withOpacity(0.18),
+                width: 1),
           ),
           child: Theme(
             // Remove the default ExpansionTile divider lines.
             data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
             child: ExpansionTile(
-              tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+              tilePadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
               childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
               expandedCrossAxisAlignment: CrossAxisAlignment.start,
               iconColor: ColorUtils.dynamicAccentColor,
-              collapsedIconColor: ColorUtils.secondaryFontColor.withOpacity(0.6),
+              collapsedIconColor:
+                  ColorUtils.secondaryFontColor.withOpacity(0.6),
               // Custom leading chevron; suppress default trailing arrow.
-              leading: Icon(Icons.chevron_right, size: 18, color: ColorUtils.dynamicAccentColor.withOpacity(0.7)),
+              leading: Icon(Icons.chevron_right,
+                  size: 18,
+                  color: ColorUtils.dynamicAccentColor.withOpacity(0.7)),
               trailing: const SizedBox.shrink(),
               title: Text(
                 title,
-                style: WidgetUtils.customTextStyle(14, FontWeight.w600, ColorUtils.dynamicAccentColor),
+                style: WidgetUtils.customTextStyle(
+                    14, FontWeight.w600, ColorUtils.dynamicAccentColor),
               ),
               children: [
-                Divider(color: ColorUtils.dynamicAccentColor.withOpacity(0.15), height: 1, thickness: 1),
+                Divider(
+                    color: ColorUtils.dynamicAccentColor.withOpacity(0.15),
+                    height: 1,
+                    thickness: 1),
                 const SizedBox(height: 10),
                 _markdownWidget(body),
               ],
@@ -526,34 +1064,52 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
       data: data,
       selectable: true,
       styleSheet: MarkdownStyleSheet(
-        p: WidgetUtils.customTextStyle(15, FontWeight.w300, ColorUtils.secondaryFontColor.withOpacity(0.9)),
-        h1: WidgetUtils.customTextStyle(22, FontWeight.bold, ColorUtils.primaryFontColor),
-        h2: WidgetUtils.customTextStyle(20, FontWeight.bold, ColorUtils.primaryFontColor),
-        h3: WidgetUtils.customTextStyle(18, FontWeight.bold, ColorUtils.primaryFontColor),
-        h4: WidgetUtils.customTextStyle(16, FontWeight.w600, ColorUtils.primaryFontColor),
-        code: WidgetUtils.customTextStyle(14, FontWeight.w400, ColorUtils.primaryFontColor).copyWith(backgroundColor: Colors.black26),
-        listBullet: WidgetUtils.customTextStyle(15, FontWeight.w300, ColorUtils.secondaryFontColor),
-        blockquote: WidgetUtils.customTextStyle(14, FontWeight.w400, ColorUtils.primaryFontColor),
-        blockquotePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        p: WidgetUtils.customTextStyle(15, FontWeight.w300,
+            ColorUtils.secondaryFontColor.withOpacity(0.9)),
+        h1: WidgetUtils.customTextStyle(
+            22, FontWeight.bold, ColorUtils.primaryFontColor),
+        h2: WidgetUtils.customTextStyle(
+            20, FontWeight.bold, ColorUtils.primaryFontColor),
+        h3: WidgetUtils.customTextStyle(
+            18, FontWeight.bold, ColorUtils.primaryFontColor),
+        h4: WidgetUtils.customTextStyle(
+            16, FontWeight.w600, ColorUtils.primaryFontColor),
+        code: WidgetUtils.customTextStyle(
+                14, FontWeight.w400, ColorUtils.primaryFontColor)
+            .copyWith(backgroundColor: Colors.black26),
+        listBullet: WidgetUtils.customTextStyle(
+            15, FontWeight.w300, ColorUtils.secondaryFontColor),
+        blockquote: WidgetUtils.customTextStyle(
+            14, FontWeight.w400, ColorUtils.primaryFontColor),
+        blockquotePadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         blockquoteDecoration: BoxDecoration(
           color: ColorUtils.dynamicSecondaryForegroundColor.withOpacity(0.25),
           borderRadius: const BorderRadius.all(Radius.circular(8)),
-          border: Border(left: BorderSide(color: ColorUtils.dynamicAccentColor, width: 4)),
+          border: Border(
+              left: BorderSide(color: ColorUtils.dynamicAccentColor, width: 4)),
         ),
-        a: WidgetUtils.customTextStyle(15, FontWeight.w500, ColorUtils.primaryFontColor.withOpacity(0.5)),
-        tableHead: WidgetUtils.customTextStyle(13, FontWeight.bold, ColorUtils.primaryFontColor),
-        tableBody: WidgetUtils.customTextStyle(13, FontWeight.w300, ColorUtils.secondaryFontColor),
+        a: WidgetUtils.customTextStyle(
+            15, FontWeight.w500, ColorUtils.primaryFontColor.withOpacity(0.5)),
+        tableHead: WidgetUtils.customTextStyle(
+            13, FontWeight.bold, ColorUtils.primaryFontColor),
+        tableBody: WidgetUtils.customTextStyle(
+            13, FontWeight.w300, ColorUtils.secondaryFontColor),
         tableHeadAlign: TextAlign.center,
-        tableBorder: TableBorder.all(color: Colors.white.withOpacity(0.1), width: 1),
+        tableBorder:
+            TableBorder.all(color: Colors.white.withOpacity(0.1), width: 1),
         tableColumnWidth: const FlexColumnWidth(),
-        tableCellsPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        tableCellsPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         codeblockDecoration: BoxDecoration(
           color: ColorUtils.dynamicSecondaryForegroundColor,
           borderRadius: const BorderRadius.all(Radius.circular(8)),
         ),
         codeblockPadding: const EdgeInsets.all(12),
-        tableCellsDecoration: BoxDecoration(color: ColorUtils.dynamicSecondaryForegroundColor),
-        tableHeadCellsDecoration: BoxDecoration(color: ColorUtils.dynamicSecondaryForegroundColor.withOpacity(0.5)),
+        tableCellsDecoration:
+            BoxDecoration(color: ColorUtils.dynamicSecondaryForegroundColor),
+        tableHeadCellsDecoration: BoxDecoration(
+            color: ColorUtils.dynamicSecondaryForegroundColor.withOpacity(0.5)),
       ),
     );
   }
@@ -564,7 +1120,9 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
       children: [
         Row(
           children: [
-            Text(AppLocalizations.of(context)!.modpack_mod_list_title, style: WidgetUtils.customTextStyle(20, FontWeight.bold, ColorUtils.primaryFontColor)),
+            Text(AppLocalizations.of(context)!.modpack_mod_list_title,
+                style: WidgetUtils.customTextStyle(
+                    20, FontWeight.bold, ColorUtils.primaryFontColor)),
             const SizedBox(width: 10),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -572,14 +1130,17 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
                 color: ColorUtils.dynamicAccentColor.withOpacity(0.15),
                 borderRadius: const BorderRadius.all(Radius.circular(12)),
               ),
-              child: Text("${_dependencies.length}", style: WidgetUtils.customTextStyle(12, FontWeight.bold, ColorUtils.dynamicAccentColor)),
+              child: Text("${_dependencies.length}",
+                  style: WidgetUtils.customTextStyle(
+                      12, FontWeight.bold, ColorUtils.dynamicAccentColor)),
             ),
             if (_isLoadingMods) ...[
               const SizedBox(width: 10),
               SizedBox(
                 width: 14,
                 height: 14,
-                child: CircularProgressIndicator(strokeWidth: 2, color: ColorUtils.dynamicAccentColor),
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: ColorUtils.dynamicAccentColor),
               ),
             ],
           ],
@@ -588,14 +1149,17 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
         Container(
           decoration: BoxDecoration(
             color: ColorUtils.dynamicPrimaryForegroundColor,
-            borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
+            borderRadius:
+                const BorderRadius.all(Radius.circular(Globals.borderRadius)),
           ),
           child: ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: _dependencies.length,
-            separatorBuilder: (context, index) => Divider(color: Colors.white.withOpacity(0.05), height: 1),
-            itemBuilder: (context, index) => _buildModItem(_dependencies[index]),
+            separatorBuilder: (context, index) =>
+                Divider(color: Colors.white.withOpacity(0.05), height: 1),
+            itemBuilder: (context, index) =>
+                _buildModItem(_dependencies[index]),
           ),
         ),
       ],
@@ -605,7 +1169,8 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
   Widget _buildModItem(dynamic dep) {
     final projectId = dep["project_id"]?.toString();
     final modData = projectId != null ? _modDetails[projectId] : null;
-    final title = modData?["title"]?.toString() ?? AppLocalizations.of(context)!.modpack_unknown_mod;
+    final title = modData?["title"]?.toString() ??
+        AppLocalizations.of(context)!.modpack_unknown_mod;
     final iconUrl = modData?["icon_url"]?.toString();
     final depType = (dep["dependency_type"] ?? "").toString().toUpperCase();
 
@@ -639,10 +1204,15 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
               )
             : _modIconPlaceholder(),
       ),
-      title: Text(title, style: WidgetUtils.customTextStyle(14, FontWeight.w500, ColorUtils.primaryFontColor)),
-      subtitle: Text(depType, style: WidgetUtils.customTextStyle(11, FontWeight.w300, depColor)),
+      title: Text(title,
+          style: WidgetUtils.customTextStyle(
+              14, FontWeight.w500, ColorUtils.primaryFontColor)),
+      subtitle: Text(depType,
+          style: WidgetUtils.customTextStyle(11, FontWeight.w300, depColor)),
       trailing: Icon(
-        dep["dependency_type"] == "required" ? Icons.check_circle_outline : Icons.info_outline,
+        dep["dependency_type"] == "required"
+            ? Icons.check_circle_outline
+            : Icons.info_outline,
         color: depColor.withOpacity(0.7),
         size: 16,
       ),
@@ -654,7 +1224,8 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
       width: 36,
       height: 36,
       color: ColorUtils.dynamicSecondaryForegroundColor,
-      child: Icon(Icons.extension_outlined, size: 20, color: ColorUtils.secondaryFontColor),
+      child: Icon(Icons.extension_outlined,
+          size: 20, color: ColorUtils.secondaryFontColor),
     );
   }
 
@@ -663,7 +1234,9 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
   // ──────────────────────────────────────────────
 
   int _getFileSize() {
-    if (_latestVersion != null && _latestVersion["files"] != null && (_latestVersion["files"] as List).isNotEmpty) {
+    if (_latestVersion != null &&
+        _latestVersion["files"] != null &&
+        (_latestVersion["files"] as List).isNotEmpty) {
       return _latestVersion["files"][0]["size"] ?? 0;
     }
 

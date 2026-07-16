@@ -268,6 +268,78 @@ abstract class AppLocalizations {
   /// **'Unknown mod'**
   String get modpack_unknown_mod;
 
+  /// No description provided for @modpack_launch.
+  ///
+  /// In en, this message translates to:
+  /// **'Launch'**
+  String get modpack_launch;
+
+  /// No description provided for @modpack_launch_button.
+  ///
+  /// In en, this message translates to:
+  /// **'Launch modpack'**
+  String get modpack_launch_button;
+
+  /// No description provided for @modpack_remove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get modpack_remove;
+
+  /// No description provided for @modpack_remove_button.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove modpack'**
+  String get modpack_remove_button;
+
+  /// No description provided for @modpack_remove_confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this modpack and all its files?'**
+  String get modpack_remove_confirmation;
+
+  /// No description provided for @modpack_compatibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Compatibility'**
+  String get modpack_compatibility;
+
+  /// No description provided for @modpack_minecraft_java.
+  ///
+  /// In en, this message translates to:
+  /// **'Minecraft: Java Edition'**
+  String get modpack_minecraft_java;
+
+  /// No description provided for @modpack_platforms.
+  ///
+  /// In en, this message translates to:
+  /// **'Platforms'**
+  String get modpack_platforms;
+
+  /// No description provided for @modpack_supported_environments.
+  ///
+  /// In en, this message translates to:
+  /// **'Supported environments'**
+  String get modpack_supported_environments;
+
+  /// No description provided for @modpack_client_server.
+  ///
+  /// In en, this message translates to:
+  /// **'Client & server'**
+  String get modpack_client_server;
+
+  /// No description provided for @modpack_client_side.
+  ///
+  /// In en, this message translates to:
+  /// **'Client-side'**
+  String get modpack_client_side;
+
+  /// No description provided for @modpack_tags.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get modpack_tags;
+
   /// No description provided for @settings_only_release_switch.
   ///
   /// In en, this message translates to:

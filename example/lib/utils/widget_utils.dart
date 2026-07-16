@@ -49,7 +49,8 @@ class WidgetUtils {
           elevation: 15,
           color: style.bgColor,
           shadowColor: style.shadowColor,
-          borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
+          borderRadius:
+              const BorderRadius.all(Radius.circular(Globals.borderRadius)),
           child: Stack(
             children: [
               Row(
@@ -62,7 +63,8 @@ class WidgetUtils {
                         elevation: 10,
                         color: Colors.transparent,
                         shadowColor: ColorUtils.defaultShadowColor,
-                        borderRadius: const BorderRadius.all(Radius.circular(10)),
+                        borderRadius:
+                            const BorderRadius.all(Radius.circular(10)),
                         child: Icon(
                           style.icon,
                           color: style.fontColor,
@@ -96,7 +98,8 @@ class WidgetUtils {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 15),
                     child: Material(
                       elevation: 15,
                       color: Colors.transparent,
@@ -115,7 +118,8 @@ class WidgetUtils {
                           value: set,
                           onToggle: (value) async {
                             callback(value);
-                            SharedPreferences prefs = await SharedPreferences.getInstance();
+                            SharedPreferences prefs =
+                                await SharedPreferences.getInstance();
                             await prefs.setBool(name2, value);
                             set = value;
                           },
@@ -170,11 +174,13 @@ class WidgetUtils {
                 decoration: InputDecoration(
                   enabledBorder: OutlineInputBorder(
                     borderSide: const BorderSide(color: Colors.transparent),
-                    borderRadius: BorderRadius.circular(Globals.borderRadius - 2),
+                    borderRadius:
+                        BorderRadius.circular(Globals.borderRadius - 2),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderSide: const BorderSide(color: Colors.white),
-                    borderRadius: BorderRadius.circular(Globals.borderRadius - 2),
+                    borderRadius:
+                        BorderRadius.circular(Globals.borderRadius - 2),
                   ),
                   hintText: hint,
                   hintStyle: customTextStyle(16, FontWeight.w300, foreground),
@@ -197,7 +203,8 @@ class WidgetUtils {
         elevation: 15,
         color: ColorUtils.dynamicPrimaryForegroundColor,
         shadowColor: ColorUtils.defaultShadowColor,
-        borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
+        borderRadius:
+            const BorderRadius.all(Radius.circular(Globals.borderRadius)),
         child: widgets,
       ),
     );
@@ -261,7 +268,8 @@ class WidgetUtils {
               child: Container(
                 padding: const EdgeInsets.all(10),
                 child: Center(
-                  child: Text(text, style: customTextStyle(16, FontWeight.w500, textColor)),
+                  child: Text(text,
+                      style: customTextStyle(16, FontWeight.w500, textColor)),
                 ),
               ),
             ),
@@ -344,8 +352,10 @@ class WidgetUtils {
     );
   }
 
-  static Future<void> showConsole(dynamic context, dynamic process, {String? gameDirectory}) async {
-    final String targetDirectory = gameDirectory ?? Globals.gamefoldercontroller.text;
+  static Future<void> showConsole(dynamic context, dynamic process,
+      {String? gameDirectory}) async {
+    final String targetDirectory =
+        gameDirectory ?? Globals.gamefoldercontroller.text;
 
     WidgetUtils.showPopup(
       context,
@@ -379,7 +389,8 @@ class WidgetUtils {
           icon: const Icon(Icons.cleaning_services, color: Colors.blueAccent),
           onPressed: () async {
             Globals.consolecontroller.clear();
-            Globals.consolecontroller.appendLine("[LAUNCHER]: ${AppLocalizations.of(context)!.console_clear_msg}\n");
+            Globals.consolecontroller.appendLine(
+                "[LAUNCHER]: ${AppLocalizations.of(context)!.console_clear_msg}\n");
           },
         ),
         IconButton(
@@ -399,7 +410,8 @@ class WidgetUtils {
         ),
         IconButton(
           iconSize: 30,
-          icon: Icon(Icons.logout, color: ColorUtils.dynamicAccentColor.withAlpha(255)),
+          icon: Icon(Icons.logout,
+              color: ColorUtils.dynamicAccentColor.withAlpha(255)),
           onPressed: () {
             showPopup(
               context,
@@ -439,7 +451,8 @@ class WidgetUtils {
                   ),
                   onPressed: () {
                     process.kill();
-                    Globals.consolecontroller.appendLine("[LAUNCHER]: ${AppLocalizations.of(context)!.console_game_kill_msg}");
+                    Globals.consolecontroller.appendLine(
+                        "[LAUNCHER]: ${AppLocalizations.of(context)!.console_game_kill_msg}");
                     Navigator.pop(context);
                     Navigator.pop(context);
                   },
@@ -479,26 +492,38 @@ class WidgetUtils {
     Globals.diagnosticcontroller.appendLine("------- System info -------");
     Globals.diagnosticcontroller.appendLine("Build: ${Globals.buildVersion}");
     Globals.diagnosticcontroller.appendLine("Platform: ${Platform.version}");
-    Globals.diagnosticcontroller.appendLine("Operating system: ${Platform.operatingSystemVersion}");
+    Globals.diagnosticcontroller
+        .appendLine("Operating system: ${Platform.operatingSystemVersion}");
     Globals.diagnosticcontroller.appendLine("Locale: ${Platform.localeName}");
-    Globals.diagnosticcontroller.appendLine("Machine name: ${Platform.localHostname}");
-    Globals.diagnosticcontroller.appendLine("CPU cores: ${Platform.numberOfProcessors}");
-    Globals.diagnosticcontroller.appendLine("Java executable: ${Globals.javapathcontroller.text}");
-    Globals.diagnosticcontroller.appendLine("Java Ram: ${Globals.javaramcontroller.text}");
-    Globals.diagnosticcontroller.appendLine("Java advanced settings: ${Globals.javaAdvSet}");
-    Globals.diagnosticcontroller.appendLine("Java args: ${Globals.javavmcontroller.text}");
-    Globals.diagnosticcontroller.appendLine("Launcher args: ${Globals.javalaunchercontroller.text}");
-    Globals.diagnosticcontroller.appendLine("------- Installed versions -------");
+    Globals.diagnosticcontroller
+        .appendLine("Machine name: ${Platform.localHostname}");
+    Globals.diagnosticcontroller
+        .appendLine("CPU cores: ${Platform.numberOfProcessors}");
+    Globals.diagnosticcontroller
+        .appendLine("Java executable: ${Globals.javapathcontroller.text}");
+    Globals.diagnosticcontroller
+        .appendLine("Java Ram: ${Globals.javaramcontroller.text}");
+    Globals.diagnosticcontroller
+        .appendLine("Java advanced settings: ${Globals.javaAdvSet}");
+    Globals.diagnosticcontroller
+        .appendLine("Java args: ${Globals.javavmcontroller.text}");
+    Globals.diagnosticcontroller
+        .appendLine("Launcher args: ${Globals.javalaunchercontroller.text}");
+    Globals.diagnosticcontroller
+        .appendLine("------- Installed versions -------");
     for (var version in VersionUtils.getMinecraftOfflineVersions(false)) {
-      Globals.diagnosticcontroller.appendLine("Type: ${version["type"]}, Version: ${version["id"]}");
+      Globals.diagnosticcontroller
+          .appendLine("Type: ${version["type"]}, Version: ${version["id"]}");
     }
     for (var version in VersionUtils.getMinecraftOfflineVersions(true)) {
-      Globals.diagnosticcontroller.appendLine("Type: ${version["type"]}, Version: ${version["id"]}");
+      Globals.diagnosticcontroller
+          .appendLine("Type: ${version["type"]}, Version: ${version["id"]}");
     }
     if (Globals.accounts.isNotEmpty) {
       Globals.diagnosticcontroller.appendLine("------- Accounts -------");
       for (var account in Globals.accounts) {
-        Globals.diagnosticcontroller.appendLine("Username: ${account.username}, UUID: ${account.uuid}, Premium: ${account.isPremium}, Slim skin: ${account.isSlimSkin}");
+        Globals.diagnosticcontroller.appendLine(
+            "Username: ${account.username}, UUID: ${account.uuid}, Premium: ${account.isPremium}, Slim skin: ${account.isSlimSkin}");
       }
     }
     Globals.diagnosticcontroller.appendLine("------- Game crashlog -------");
@@ -557,17 +582,22 @@ class WidgetUtils {
   }
 
   static void showLoadingCircle(dynamic context) {
-    showDialog(
+    showDialog<void>(
       context: context,
+      barrierDismissible: false,
       builder: (context) {
-        return Center(
-          child: Image.asset('assets/morpheus-animated.gif', width: 64),
+        return PopScope(
+          canPop: false,
+          child: Center(
+            child: Image.asset('assets/morpheus-animated.gif', width: 64),
+          ),
         );
       },
     );
   }
 
-  static TextStyle customTextStyle(double size, FontWeight weight, Color textColor) {
+  static TextStyle customTextStyle(
+      double size, FontWeight weight, Color textColor) {
     return TextStyle(
       fontSize: size,
       fontFamily: 'Comfortaa',
@@ -598,7 +628,8 @@ class WidgetUtils {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(radius),
         boxShadow: <BoxShadow>[
-          BoxShadow(color: color, blurRadius: radius, offset: const Offset(0, 0)),
+          BoxShadow(
+              color: color, blurRadius: radius, offset: const Offset(0, 0)),
         ],
       ),
       child: child,
@@ -607,7 +638,8 @@ class WidgetUtils {
 }
 
 Widget drawTitleCustomBar() {
-  return WindowTitleBarBox(
+  final titleBar = SizedBox(
+    height: Platform.isMacOS ? 28 : null,
     child: Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -623,7 +655,9 @@ Widget drawTitleCustomBar() {
         Material(
           color: Colors.transparent,
           child: WidgetUtils.backShadow(
-            Text(Globals.windowTitle, style: WidgetUtils.customTextStyle(12, FontWeight.w400, ColorUtils.primaryFontColor)),
+            Text(Globals.windowTitle,
+                style: WidgetUtils.customTextStyle(
+                    12, FontWeight.w400, ColorUtils.primaryFontColor)),
             40.0,
             ColorUtils.defaultShadowColor,
           ),
@@ -639,6 +673,8 @@ Widget drawTitleCustomBar() {
       ],
     ),
   );
+
+  return Platform.isMacOS ? titleBar : WindowTitleBarBox(child: titleBar);
 }
 
 class WindowButtons extends StatefulWidget {
@@ -675,7 +711,8 @@ class _WindowButtonsState extends State<WindowButtons> {
     return Row(
       children: [
         MinimizeWindowButton(colors: buttonColors),
-        MaximizeWindowButton(colors: buttonColors, onPressed: maximizeOrRestore),
+        MaximizeWindowButton(
+            colors: buttonColors, onPressed: maximizeOrRestore),
         CloseWindowButton(colors: closeButtonColors),
       ],
     );
