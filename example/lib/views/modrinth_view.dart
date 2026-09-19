@@ -242,13 +242,7 @@ class _ModrinthViewState extends State<ModrinthView> {
   }
 
   int _modpackGridColumnCount(double width) {
-    const minTileWidth = 360.0;
-    const spacing = 8.0;
-    var columns = ((width + spacing) / (minTileWidth + spacing)).floor();
-    if (columns < 1) columns = 1;
-    if (columns > 1) columns = (columns - 2).clamp(1, columns);
-
-    return columns;
+    return WidgetUtils.responsiveColumnCount(width, minTileWidth: 360, spacing: 8, maxColumns: 4);
   }
 
   Widget _buildModpackList() {

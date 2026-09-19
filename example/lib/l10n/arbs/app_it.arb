@@ -9,6 +9,15 @@
   "home_news_empty_msg": "Impossibile recuperare il changelog da mojang, perfavore consenti questo programma nel tuo firewall",
 
   "morpheus_products_empty": "Impossibile recuperare i prodotti morpheus",
+  "morpheus_hero_title": "Gioca con il client Morpheus",
+  "morpheus_hero_subtitle": "Il nostro client 1.8.9 con OptiFine integrato, mod dedicate al PvP, un'estetica curata e un music player integrato.",
+  "morpheus_badge_featured": "In evidenza",
+  "morpheus_feature_optifine": "OptiFine integrato",
+  "morpheus_feature_pvp": "Mod PvP dedicate",
+  "morpheus_feature_music": "Music player integrato",
+  "morpheus_play_button": "Gioca",
+  "morpheus_trust_privacy": "Nessuna raccolta dati",
+  "morpheus_trust_no_ads": "Zero pubblicità",
 
   "vanilla_empty_title": "Nessuna versione vanilla trovata",
   "vanilla_release_title": "Ultima release",

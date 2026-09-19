@@ -29,6 +29,34 @@ class AppLocalizationsDe extends AppLocalizations {
       'Produkte von morpheus konnten nicht abgerufen werden';
 
   @override
+  String get morpheus_hero_title => 'Spiele mit dem Morpheus-Client';
+
+  @override
+  String get morpheus_hero_subtitle =>
+      'Unser eigener 1.8.9-Client mit integriertem OptiFine, speziellen PvP-Mods, einem gepflegten Design und einem integrierten Musikplayer.';
+
+  @override
+  String get morpheus_badge_featured => 'Empfohlen';
+
+  @override
+  String get morpheus_feature_optifine => 'OptiFine integriert';
+
+  @override
+  String get morpheus_feature_pvp => 'Spezielle PvP-Mods';
+
+  @override
+  String get morpheus_feature_music => 'Integrierter Musikplayer';
+
+  @override
+  String get morpheus_play_button => 'Spielen';
+
+  @override
+  String get morpheus_trust_privacy => 'Keine Datenerfassung';
+
+  @override
+  String get morpheus_trust_no_ads => 'Keine Werbung';
+
+  @override
   String get vanilla_empty_title =>
       'Keine Vanilla-Minecraft-Versionen gefunden';
 

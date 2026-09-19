@@ -9,6 +9,15 @@
   "home_news_empty_msg": "Kann das Minecraft-Änderungsprotokoll von Mojang nicht abrufen. Bitte erlauben Sie diesem Programm den Zugriff durch Ihre Firewall",
 
   "morpheus_products_empty": "Produkte von morpheus konnten nicht abgerufen werden",
+  "morpheus_hero_title": "Spiele mit dem Morpheus-Client",
+  "morpheus_hero_subtitle": "Unser eigener 1.8.9-Client mit integriertem OptiFine, speziellen PvP-Mods, einem gepflegten Design und einem integrierten Musikplayer.",
+  "morpheus_badge_featured": "Empfohlen",
+  "morpheus_feature_optifine": "OptiFine integriert",
+  "morpheus_feature_pvp": "Spezielle PvP-Mods",
+  "morpheus_feature_music": "Integrierter Musikplayer",
+  "morpheus_play_button": "Spielen",
+  "morpheus_trust_privacy": "Keine Datenerfassung",
+  "morpheus_trust_no_ads": "Keine Werbung",
 
   "vanilla_empty_title": "Keine Vanilla-Minecraft-Versionen gefunden",
   "vanilla_release_title": "Neueste Version",

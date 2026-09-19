@@ -9,6 +9,15 @@
   "home_news_empty_msg": "No se puede recuperar el registro de cambios de Mojang, por favor permite este programa en tu firewall",
 
   "morpheus_products_empty": "No se pueden recuperar los productos morpheus",
+  "morpheus_hero_title": "Juega con el cliente Morpheus",
+  "morpheus_hero_subtitle": "Nuestro propio cliente 1.8.9 con OptiFine integrado, mods dedicados al PvP, un diseño cuidado y un reproductor de música integrado.",
+  "morpheus_badge_featured": "Destacado",
+  "morpheus_feature_optifine": "OptiFine integrado",
+  "morpheus_feature_pvp": "Mods de PvP dedicados",
+  "morpheus_feature_music": "Reproductor de música integrado",
+  "morpheus_play_button": "Jugar",
+  "morpheus_trust_privacy": "Sin recopilación de datos",
+  "morpheus_trust_no_ads": "Sin publicidad",
 
   "vanilla_empty_title": "No se encontró ninguna versión Vanilla",
   "vanilla_release_title": "Última versión",

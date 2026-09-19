@@ -6,6 +6,7 @@ import 'package:flutter/src/widgets/framework.dart';
 import 'package:http/http.dart' as http;
 import 'package:morpheus_launcher_gui/globals.dart';
 import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/launch_policy.dart';
 
 class VersionUtils {
   static Future<List<String>> getPinnedVersions() async {
@@ -118,11 +119,7 @@ class VersionUtils {
         var parts = value.last.split('-');
         if (parts.length >= 2) {
           int idx = keys.indexOf(key);
-          if (idx >= keys.indexOf("1.6.4") &&
-              idx != keys.indexOf("1.7.10_pre4") &&
-              idx != keys.indexOf("1.18") &&
-              idx != keys.indexOf("1.19") &&
-              (idx < keys.indexOf("1.13.2") || idx > keys.indexOf("1.16.5"))) {
+          if (idx >= keys.indexOf("1.6.4") && idx != keys.indexOf("1.7.10_pre4") && idx != keys.indexOf("1.18") && idx != keys.indexOf("1.19") && (idx < keys.indexOf("1.13.2") || idx > keys.indexOf("1.16.5"))) {
             resultList.add("${parts[0]}-forge-${parts[1]}");
           }
         }
@@ -300,6 +297,86 @@ class VersionUtils {
     }
   }
 
+  /// Resolves a version id (plus optional hints) to its [ModLoader] and
+  /// real Minecraft version, without requiring the version to be installed
+  /// or the remote manifest to be available.
+  ///
+  /// Resolution order for the Minecraft version:
+  /// 1. an explicit [minecraftVersion], when given;
+  /// 2. the installed profile's `inheritsFrom` (recursing through it when
+  ///    the parent id itself self-describes a loader, e.g. a not-yet-
+  ///    installed Forge build);
+  /// 3. parsing [id] itself using the loader's naming convention.
+  ///
+  /// The loader is detected from [id], refined by an installed profile's
+  /// `libraries` (the way real Forge/Fabric/Quilt/NeoForge installers
+  /// record it when `inheritsFrom` points at a plain vanilla version), and
+  /// falls back to [type] when [id] doesn't self-describe a loader.
+  static LaunchProfile resolveLaunchProfile(
+    String id, {
+    String type = '',
+    String? minecraftVersion,
+    String? gameDirectory,
+  }) {
+    return _resolveLaunchProfile(id, type: type, minecraftVersion: minecraftVersion, gameDirectory: gameDirectory, depth: 0);
+  }
+
+  static LaunchProfile _resolveLaunchProfile(
+    String id, {
+    required String type,
+    String? minecraftVersion,
+    String? gameDirectory,
+    required int depth,
+  }) {
+    // Guards against a malformed/cyclic inheritsFrom chain.
+    if (depth > 10) {
+      return LaunchProfile(minecraftVersion: minecraftVersion ?? id, loader: ModLoader.vanilla);
+    }
+
+    var loader = LaunchPolicy.detectLoaderFromId(id);
+    if (loader == ModLoader.vanilla && type.isNotEmpty) {
+      loader = LaunchPolicy.detectLoaderFromType(type);
+    }
+
+    String? resolvedVersion = (minecraftVersion != null && minecraftVersion.isNotEmpty) ? minecraftVersion : null;
+
+    final directory = gameDirectory ?? Globals.gamefoldercontroller.text;
+    final profileFile = File('$directory/versions/$id/$id.json');
+
+    if (profileFile.existsSync()) {
+      try {
+        final data = json.decode(profileFile.readAsStringSync()) as Map<String, dynamic>;
+
+        final libraries = data['libraries'];
+        if (libraries is List) {
+          final libraryLoader = LaunchPolicy.detectLoaderFromLibraries(libraries);
+          if (libraryLoader != null) loader = libraryLoader;
+        }
+
+        final inheritsFrom = data['inheritsFrom']?.toString();
+        if (resolvedVersion == null && inheritsFrom != null && inheritsFrom.isNotEmpty) {
+          final parentLoader = LaunchPolicy.detectLoaderFromId(inheritsFrom);
+
+          if (parentLoader != ModLoader.vanilla) {
+            // The parent id itself encodes a loader (e.g. a Forge build
+            // that hasn't been installed yet): resolve it the same way.
+            final parentProfile = _resolveLaunchProfile(inheritsFrom, type: type, gameDirectory: gameDirectory, depth: depth + 1);
+            resolvedVersion = parentProfile.minecraftVersion;
+            if (loader == ModLoader.vanilla) loader = parentProfile.loader;
+          } else {
+            resolvedVersion = inheritsFrom;
+          }
+        }
+      } catch (_) {
+        // Corrupt or unreadable profile JSON: fall back to id-based parsing.
+      }
+    }
+
+    resolvedVersion ??= LaunchPolicy.extractMinecraftVersion(id, loader);
+
+    return LaunchProfile(minecraftVersion: resolvedVersion, loader: loader);
+  }
+
   static Future<void> fetchMorpheusProducts() async {
     final response = await http.get(
       Uri.parse(Urls.morpheusProductsURL),
@@ -333,18 +410,21 @@ class VersionUtils {
       gameVer = gameVer.split(" ").first;
     }
 
-    if (gameVer.contains("optifine")) {
-      gameType = "optifine";
-      gameVer = gameVer.split("-")[0];
-    } else if (gameVer.contains("optiforge")) {
-      gameType = "optiforge";
-      gameVer = gameVer.split("-")[0];
-    } else if (gameVer.contains("forge")) {
-      gameType = "forge";
-      gameVer = gameVer.split("-")[0];
-    } else if (gameVer.contains("fabric")) {
-      gameType = "fabric";
-      gameVer = gameVer.split("-")[3];
+    // "latest"/"snapshot" are aliases for whatever the manifest currently
+    // considers the newest release/snapshot; resolve them so range checks
+    // (which compare against concrete version ids) can actually match.
+    if (gameVer == "latest" && Globals.vanillaVersionsResponse != null) {
+      final resolved = Globals.vanillaVersionsResponse["latest"]?["release"];
+      if (resolved is String && resolved.isNotEmpty) gameVer = resolved.toLowerCase();
+    } else if (gameVer == "snapshot" && Globals.vanillaVersionsResponse != null) {
+      final resolved = Globals.vanillaVersionsResponse["latest"]?["snapshot"];
+      if (resolved is String && resolved.isNotEmpty) gameVer = resolved.toLowerCase();
+    }
+
+    final idLoader = LaunchPolicy.detectLoaderFromId(gameVer);
+    if (idLoader != ModLoader.vanilla) {
+      gameType = idLoader.name;
+      gameVer = LaunchPolicy.extractMinecraftVersion(gameVer, idLoader);
     } else if (gameType.contains("release") || gameType.contains("snapshot")) {
       gameType = "release";
     } else if (gameType.contains("beta")) {
@@ -388,13 +468,12 @@ class VersionUtils {
       final currentOS = _getCurrentOS();
       final currentArch = _getCurrentArch();
 
-      List<dynamic> rangesToCheck;
-
-      if (Globals.forceClasspath) {
-        rangesToCheck = loaderConfig['classpath']?['ranges'] as List? ?? [];
-      } else {
-        rangesToCheck = loaderConfig['classloader']?['ranges'] as List? ?? [];
-      }
+      // Use the exact same mode the actual launch would use for this
+      // loader/version, so compatibility checks never disagree with what
+      // happens when the user actually launches.
+      final loader = LaunchPolicy.detectLoaderFromType(loaderType);
+      final useClasspath = LaunchPolicy.resolveEnableClassPathFor(loader, version);
+      final rangesToCheck = loaderConfig[useClasspath ? 'classpath' : 'classloader']?['ranges'] as List? ?? [];
 
       for (var range in rangesToCheck) {
         if (_isVersionInRange(version, range['from'], range['to'])) {

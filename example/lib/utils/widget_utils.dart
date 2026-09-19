@@ -33,6 +33,26 @@ class CustomSettingSwitchStyle {
 }
 
 class WidgetUtils {
+  /// Numero di colonne per una griglia responsive larga [width], dati una
+  /// larghezza minima di tile [minTileWidth] e uno spacing tra tile
+  /// [spacing]. Usata da tutte le griglie del launcher (home, morpheus,
+  /// vanilla, modloaders/modpack, alt manager, browser Modrinth) così che
+  /// il numero di colonne resti coerente e prevedibile tra le varie
+  /// schermate e durante il resize della finestra, invece di dipendere da
+  /// logiche duplicate e leggermente diverse in ogni file.
+  static int responsiveColumnCount(
+    double width, {
+    double minTileWidth = 300,
+    double spacing = 8,
+    int? maxColumns,
+  }) {
+    var columns = ((width + spacing) / (minTileWidth + spacing)).floor();
+    if (columns < 1) columns = 1;
+    if (maxColumns != null && columns > maxColumns) columns = maxColumns;
+
+    return columns;
+  }
+
   /** Switch impostazioni */
   static Widget buildSettingSwitchItem(
     String name,

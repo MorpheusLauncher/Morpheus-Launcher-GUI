@@ -9,6 +9,15 @@
   "home_news_empty_msg": "Impossible de récupérer le journal des modifications de Minecraft depuis Mojang. Veuillez autoriser ce programme via votre pare-feu",
 
   "morpheus_products_empty": "Impossible de récupérer les produits morpheus",
+  "morpheus_hero_title": "Jouez avec le client Morpheus",
+  "morpheus_hero_subtitle": "Notre propre client 1.8.9 avec OptiFine intégré, des mods dédiés au PvP, une esthétique soignée et un lecteur de musique intégré.",
+  "morpheus_badge_featured": "En vedette",
+  "morpheus_feature_optifine": "OptiFine intégré",
+  "morpheus_feature_pvp": "Mods PvP dédiés",
+  "morpheus_feature_music": "Lecteur de musique intégré",
+  "morpheus_play_button": "Jouer",
+  "morpheus_trust_privacy": "Aucune collecte de données",
+  "morpheus_trust_no_ads": "Aucune publicité",
 
   "vanilla_empty_title": "Aucune version de Minecraft Vanilla trouvée",
   "vanilla_release_title": "Dernière version",

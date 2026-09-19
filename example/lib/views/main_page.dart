@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:blur/blur.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:file_picker/file_picker.dart';
@@ -18,7 +17,6 @@ import 'package:morpheus_launcher_gui/globals.dart';
 import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
 import 'package:morpheus_launcher_gui/main.dart';
 import 'package:morpheus_launcher_gui/utils/circle_utils.dart';
-import 'package:morpheus_launcher_gui/utils/glass_morphism.dart';
 import 'package:morpheus_launcher_gui/utils/launcher//version_utils.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/launch_utils.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/modrinth_utils.dart';
@@ -127,20 +125,22 @@ class _MainPageState extends State<MainPage> {
 
   Widget _buildResponsiveTileGrid(
     List<Widget> children, {
-    double minTileWidth = 300,
+    double minTileWidth = 340,
     double spacing = 8,
     double runSpacing = 0,
-    int? maxColumns,
+    int maxColumns = 4,
   }) {
     if (children.isEmpty) return const SizedBox.shrink();
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.hasBoundedWidth ? constraints.maxWidth : MediaQuery.of(context).size.width;
-        var columns = ((width + spacing) / (minTileWidth + spacing)).floor();
-        if (columns < 1) columns = 1;
-        if (columns > 1) columns = (columns - 2).clamp(1, columns);
-        if (maxColumns != null && columns > maxColumns) columns = maxColumns;
+        final columns = WidgetUtils.responsiveColumnCount(
+          width,
+          minTileWidth: minTileWidth,
+          spacing: spacing,
+          maxColumns: maxColumns,
+        );
 
         final tileWidth = (width - (spacing * (columns - 1))) / columns;
 
@@ -398,6 +398,7 @@ class _MainPageState extends State<MainPage> {
                     version["body"],
                     version["image"]["url"],
                     detailPath: version["detailPath"]?.toString(),
+                    date: version["date"]?.toString(),
                   ),
             ],
             minTileWidth: 280,
@@ -426,6 +427,7 @@ class _MainPageState extends State<MainPage> {
     String body,
     String url, {
     String? detailPath,
+    String? date,
   }) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(0, 2, 0, 2),
@@ -436,60 +438,96 @@ class _MainPageState extends State<MainPage> {
           color: ColorUtils.dynamicPrimaryForegroundColor,
           shadowColor: ColorUtils.defaultShadowColor,
           borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
-          child: Column(
-            children: [
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => NewsScreen(
-                        title: title,
-                        body: body,
-                        url: url,
-                        detailPath: detailPath,
-                      ),
-                    ),
-                  );
-                },
-                /** Roba della miniatura e titolo */
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Image.network(
-                        "${Urls.mojangContentURL}$url",
-                        width: MediaQuery.of(context).size.width,
-                        height: MediaQuery.of(context).size.height / 4,
-                        fit: BoxFit.cover,
-                      ).blurred(
-                        blur: 4,
-                        blurColor: Colors.black,
-                        colorOpacity: 0.1,
-                        borderRadius: BorderRadius.circular(Globals.borderRadius - 2),
-                      ),
-                      Text(
-                        title,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontFamily: 'Comfortaa',
-                          fontWeight: FontWeight.w300,
-                          color: Colors.white.withAlpha(160),
-                        ),
-                      ),
-                    ],
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => NewsScreen(
+                    title: title,
+                    body: body,
+                    url: url,
+                    detailPath: detailPath,
+                    date: date,
                   ),
                 ),
-              ),
-            ],
+              );
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                /** Miniatura con titolo e data leggibili su gradiente */
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(Globals.borderRadius - 2),
+                    child: Stack(
+                      children: [
+                        Image.network(
+                          "${Urls.mojangContentURL}$url",
+                          width: double.infinity,
+                          height: 150,
+                          fit: BoxFit.cover,
+                        ),
+                        // Gradiente in basso invece di un blur uniforme: la
+                        // miniatura resta leggibile e il testo sopra pure.
+                        Positioned.fill(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [Colors.transparent, Colors.black.withAlpha(190)],
+                                stops: const [0.4, 1.0],
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          left: 10,
+                          right: 10,
+                          bottom: 8,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: WidgetUtils.customTextStyle(16, FontWeight.w600, Colors.white),
+                              ),
+                              if (date != null && date.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  _formatNewsDate(date),
+                                  style: WidgetUtils.customTextStyle(11, FontWeight.w500, Colors.white.withAlpha(190)),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  String _formatNewsDate(String isoDate) {
+    try {
+      final dt = DateTime.parse(isoDate).toLocal();
+
+      return "${dt.day}/${dt.month}/${dt.year}";
+    } catch (_) {
+      return "";
+    }
   }
 
   /////////// MORPHEUS /////////////
@@ -497,6 +535,8 @@ class _MainPageState extends State<MainPage> {
   ListView buildMorpheusList() {
     return ListView(
       children: [
+        _buildMorpheusHero(),
+        const SizedBox(height: 8),
         if (Globals.morpheusVersionsResponse != null) ...[
           _buildResponsiveTileGrid(
             [
@@ -529,6 +569,102 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
+  /// Banner introduttivo sopra la griglia dei prodotti Morpheus: spiega in
+  /// due righe perché scegliere il client Morpheus invece di vanilla/mod,
+  /// dato che l'API dei prodotti non fornisce alcuna descrizione.
+  Widget _buildMorpheusHero() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            ColorUtils.dynamicAccentColor.withAlpha(60),
+            ColorUtils.dynamicPrimaryForegroundColor,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(Globals.borderRadius + 4),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(Icons.auto_awesome, color: ColorUtils.dynamicAccentColor, size: 34),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  AppLocalizations.of(context)!.morpheus_hero_title,
+                  style: WidgetUtils.customTextStyle(20, FontWeight.w700, ColorUtils.primaryFontColor),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  AppLocalizations.of(context)!.morpheus_hero_subtitle,
+                  style: WidgetUtils.customTextStyle(13, FontWeight.w400, ColorUtils.secondaryFontColor),
+                ),
+                const SizedBox(height: 10),
+                // A differenza delle feature del client (OptiFine, PvP, ...)
+                // questi riguardano l'intero ecosistema Morpheus: per questo
+                // vivono nell'hero e non nella singola card del prodotto.
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildMorpheusTrustChip(Icons.shield_outlined, AppLocalizations.of(context)!.morpheus_trust_privacy),
+                    _buildMorpheusTrustChip(Icons.block, AppLocalizations.of(context)!.morpheus_trust_no_ads),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Trust badge dell'hero (privacy, niente pubblicità): stile pensato per
+  /// stare sullo sfondo chiaro dell'hero, a differenza delle feature chip
+  /// del client che vivono sopra uno screenshot scuro.
+  Widget _buildMorpheusTrustChip(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: ColorUtils.dynamicAccentColor.withAlpha(30),
+        borderRadius: const BorderRadius.all(Radius.circular(20)),
+        border: Border.all(color: ColorUtils.dynamicAccentColor.withAlpha(90)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: ColorUtils.dynamicAccentColor),
+          const SizedBox(width: 5),
+          Text(label, style: WidgetUtils.customTextStyle(11, FontWeight.w600, ColorUtils.primaryFontColor)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMorpheusFeatureChip(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(38),
+        borderRadius: const BorderRadius.all(Radius.circular(10)),
+        border: Border.all(color: Colors.white.withAlpha(60)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: Colors.white),
+          const SizedBox(width: 4),
+          Text(label, style: WidgetUtils.customTextStyle(11, FontWeight.w500, Colors.white)),
+        ],
+      ),
+    );
+  }
+
   Widget buildMorpheusItem(
     String productName,
     String gameVersion,
@@ -542,103 +678,133 @@ class _MainPageState extends State<MainPage> {
         color: ColorUtils.dynamicPrimaryForegroundColor,
         shadowColor: ColorUtils.defaultShadowColor,
         borderRadius: BorderRadius.circular(Globals.borderRadius + 4),
+        clipBehavior: Clip.antiAlias,
         child: Stack(
           children: [
-            /** Immagine del client */
-            SizedBox(
-              height: MediaQuery.of(context).size.height * 0.5,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 3),
-                child: Image.network(
-                  image,
-                  width: MediaQuery.of(context).size.width,
-                  height: MediaQuery.of(context).size.height,
-                  fit: BoxFit.cover,
-                ).blurred(
-                  blur: 0,
-                  blurColor: Colors.black,
-                  colorOpacity: 0.1,
-                  borderRadius: BorderRadius.circular(Globals.borderRadius + 2),
+            Positioned.fill(
+              child: Image.network(image, fit: BoxFit.cover),
+            ),
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Colors.black.withAlpha(210)],
+                    stops: const [0.25, 0.85],
+                  ),
                 ),
               ),
             ),
+
+            /** Badge "In evidenza" */
+            Positioned(
+              top: 12,
+              left: 10,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(38),
+                  borderRadius: const BorderRadius.all(Radius.circular(8)),
+                  boxShadow: [BoxShadow(color: Colors.black.withAlpha(60), blurRadius: 6, offset: const Offset(0, 2))],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Icon(Icons.star, size: 13, color: ColorUtils.dynamicAccentColor),
+                    const SizedBox(width: 4),
+                    Text(
+                      AppLocalizations.of(context)!.morpheus_badge_featured,
+                      style: WidgetUtils.customTextStyle(11, FontWeight.w700, ColorUtils.secondaryFontColor).copyWith(height: 1),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            /** Contenuto: uno spacer riserva l'area "solo immagine" in alto,
+             * poi il pannello info (non posizionato: è lui a determinare
+             * l'altezza finale della card, l'immagine si adatta di conseguenza
+             * grazie al Positioned.fill sopra). */
             Column(
               children: [
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.5 - 74,
-                ),
+                const SizedBox(height: 118),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  child: GlassMorphism(
-                    blur: 8,
-                    opacity: 0.15,
-                    radius: Globals.borderRadius,
-                    child: Stack(
-                      children: [
-                        /** Info del client */
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(8, 5, 10, 5),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              Text(
-                                productName,
-                                style: WidgetUtils.customTextStyle(
-                                  18,
-                                  FontWeight.w500,
-                                  Colors.white,
-                                ),
-                              ),
-                              Text(
-                                "minecraft $gameVersion",
-                                style: WidgetUtils.customTextStyle(
-                                  14,
-                                  FontWeight.w500,
-                                  Colors.white.withAlpha(200),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        /** Sezione Pulsanti */
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          crossAxisAlignment: CrossAxisAlignment.center,
+                  padding: const EdgeInsets.fromLTRB(10, 0, 10, 12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            SizedBox(
-                              height: 55,
-                              child: WidgetUtils.buildButton(
-                                Icons.rocket_launch,
-                                ColorUtils.dynamicAccentColor,
-                                Colors.white,
-                                () async {
-                                  final config = LaunchConfig(
-                                    gameVersion: gameVersion,
-                                    productId: productId,
-                                    isModded: false,
-                                    realGameVersion: gameVersion,
-                                    enableClassPath: false,
-                                    startOnFirstThread: false,
-                                    jvmArgs: [],
-                                    launcherArgs: [],
-                                  );
-
-                                  await LaunchUtils.launchMinecraft(
-                                    context,
-                                    config,
-                                    onAccountRequired: () {
-                                      setState(() => Globals.navSelected = NavSection.accounts);
-                                    },
-                                  );
-                                },
-                              ),
+                            Text(
+                              productName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: WidgetUtils.customTextStyle(18, FontWeight.w500, Colors.white),
+                            ),
+                            Text(
+                              "minecraft $gameVersion",
+                              style: WidgetUtils.customTextStyle(14, FontWeight.w500, Colors.white.withAlpha(200)),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: [
+                                _buildMorpheusFeatureChip(Icons.auto_awesome, AppLocalizations.of(context)!.morpheus_feature_optifine),
+                                _buildMorpheusFeatureChip(Icons.bolt, AppLocalizations.of(context)!.morpheus_feature_pvp),
+                                _buildMorpheusFeatureChip(Icons.music_note, AppLocalizations.of(context)!.morpheus_feature_music),
+                              ],
                             ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 10),
+
+                      /** Pulsante Gioca */
+                      SizedBox(
+                        height: 48,
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            final config = LaunchConfig(
+                              gameVersion: gameVersion,
+                              productId: productId,
+                              isModded: false,
+                              realGameVersion: gameVersion,
+                              loader: ModLoader.vanilla,
+                              startOnFirstThread: false,
+                              jvmArgs: [],
+                              launcherArgs: [],
+                            );
+
+                            await LaunchUtils.launchMinecraft(
+                              context,
+                              config,
+                              onAccountRequired: () {
+                                setState(() => Globals.navSelected = NavSection.accounts);
+                              },
+                            );
+                          },
+                          icon: const Icon(Icons.rocket_launch, size: 20, color: Colors.white),
+                          label: Text(
+                            AppLocalizations.of(context)!.morpheus_play_button,
+                            style: WidgetUtils.customTextStyle(15, FontWeight.w700, Colors.white),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: ColorUtils.dynamicAccentColor,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 18),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(Globals.borderRadius - 4),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -835,20 +1001,21 @@ class _MainPageState extends State<MainPage> {
                 ColorUtils.dynamicAccentColor,
                 Colors.white,
                 () async {
-                  var modLoaderConfig = versionResolver(gameType, gameVersion, context);
+                  final resolvedVersion = versionResolver(gameType, gameVersion, context);
+                  final profile = VersionUtils.resolveLaunchProfile(
+                    resolvedVersion.gameVersion,
+                    gameDirectory: Globals.gamefoldercontroller.text,
+                  );
                   final config = LaunchConfig(
-                    gameVersion: modLoaderConfig.gameVersion,
+                    gameVersion: resolvedVersion.gameVersion,
                     productId: null,
-                    isModded: modLoaderConfig.isModded,
-                    realGameVersion: modLoaderConfig.realGameVersion,
-                    enableClassPath: LaunchUtils.shouldEnableClassPath(
-                      modLoaderConfig.gameVersion,
-                      modLoaderConfig.enableClassPath,
-                    ),
+                    isModded: profile.loader != ModLoader.vanilla,
+                    realGameVersion: profile.minecraftVersion,
+                    loader: profile.loader,
                     startOnFirstThread: LaunchUtils.shouldUseStartOnFirstThread(
-                      modLoaderConfig.realGameVersion,
+                      profile.minecraftVersion,
                     ),
-                    jvmArgs: modLoaderConfig.additionalArgs,
+                    jvmArgs: resolvedVersion.additionalArgs,
                     launcherArgs: [],
                   );
                   await LaunchUtils.launchMinecraft(
@@ -882,130 +1049,96 @@ class _MainPageState extends State<MainPage> {
     return 'assets/release.png';
   }
 
-  ModLoaderConfig versionResolver(
+  /// Costruisce l'id di versione completo (auto-descrittivo per il loader,
+  /// es. "fabric-loader-X-Y", "Y-forge-X") a partire dai cataloghi
+  /// disponibili. La policy classloader/classpath viene poi decisa da
+  /// LaunchConfig.enableClassPath in base al loader risolto da
+  /// VersionUtils.resolveLaunchProfile, non da questo metodo.
+  ({String gameVersion, List<String> additionalArgs}) versionResolver(
     String gameType,
     String gameVersion,
     BuildContext context,
   ) {
-    var realGameVersion = gameVersion;
-    var enableClassPath = Globals.forceClasspath;
-
     // Latest Release
     if (gameType.contains(AppLocalizations.of(context)?.vanilla_release_title as Pattern) || gameVersion.contains("latest")) {
-      return ModLoaderConfig(
-        gameVersion: "latest",
-        realGameVersion: realGameVersion,
-        isModded: false,
-        enableClassPath: true,
-      );
+      return (gameVersion: "latest", additionalArgs: const []);
     }
 
     // Latest Snapshot
     if (gameType.contains(AppLocalizations.of(context)?.vanilla_snapshot_title as Pattern) || gameVersion.contains("snapshot")) {
-      return ModLoaderConfig(
-        gameVersion: "snapshot",
-        realGameVersion: realGameVersion,
-        isModded: false,
-        enableClassPath: true,
-      );
+      return (gameVersion: "snapshot", additionalArgs: const []);
+    }
+
+    // NeoForge (already self-describing in the installed list, e.g.
+    // "neoforge-21.1.1"). Must be checked before Forge below, since
+    // "neoforge" also contains the substring "forge".
+    if (gameType.toLowerCase().contains("neoforge") || gameVersion.toLowerCase().contains("neoforge")) {
+      return (gameVersion: gameVersion, additionalArgs: const []);
     }
 
     // Fabric
     if (gameType.toLowerCase().contains("fabric") || gameVersion.toLowerCase().contains("fabric")) {
-      if (gameVersion.toLowerCase().startsWith("fabric")) {
-        realGameVersion = gameVersion.split("-")[3];
-      } else {
+      if (!gameVersion.toLowerCase().startsWith("fabric")) {
         var fabricVersion = Globals.fabricLoaderVersionsResponse[0]["version"];
-        gameVersion = "fabric-loader-$fabricVersion-$realGameVersion";
+        gameVersion = "fabric-loader-$fabricVersion-$gameVersion";
       }
 
-      return ModLoaderConfig(
-        gameVersion: gameVersion,
-        realGameVersion: realGameVersion,
-        isModded: true,
-        enableClassPath: true,
-      );
+      return (gameVersion: gameVersion, additionalArgs: const []);
     }
 
     // OptiFine
     if (gameType.toLowerCase().contains("optifine") || gameVersion.toLowerCase().contains("optifine")) {
       if (gameType.toLowerCase().contains("optifine")) {
-        realGameVersion = gameVersion.toLowerCase();
+        final baseVersion = gameVersion.toLowerCase();
         for (var version in Globals.optifineVersions) {
-          if (version.split("-")[0] == realGameVersion) {
+          if (version.split("-")[0] == baseVersion) {
             gameVersion = version;
             break;
           }
         }
-      } else {
-        realGameVersion = gameVersion.toLowerCase().split("-")[0];
       }
 
-      return ModLoaderConfig(
-        gameVersion: gameVersion,
-        realGameVersion: realGameVersion,
-        isModded: true,
-        enableClassPath: enableClassPath,
-      );
+      return (gameVersion: gameVersion, additionalArgs: const []);
     }
 
     // OptiForge
     if (gameType.toLowerCase().contains("optiforge") || gameVersion.toLowerCase().contains("optiforge")) {
       if (gameType.toLowerCase().contains("optiforge")) {
-        realGameVersion = gameVersion.toLowerCase();
+        final baseVersion = gameVersion.toLowerCase();
         for (var version in Globals.forgeVersions) {
-          if (version.split("-")[0] == realGameVersion) {
+          if (version.split("-")[0] == baseVersion) {
             gameVersion = version.toString().replaceAll("forge", "optiforge");
             break;
           }
         }
-      } else {
-        realGameVersion = gameVersion.toLowerCase().split("-")[0];
       }
 
-      return ModLoaderConfig(
+      return (
         gameVersion: gameVersion,
-        realGameVersion: realGameVersion,
-        isModded: true,
-        additionalArgs: [
-          "-Dfml.ignoreInvalidMinecraftCertificates=true",
-        ],
-        enableClassPath: enableClassPath,
+        additionalArgs: ["-Dfml.ignoreInvalidMinecraftCertificates=true"],
       );
     }
 
     // Forge
     if (gameType.toLowerCase().contains("forge") || gameVersion.toLowerCase().contains("forge")) {
       if (gameType.toLowerCase().contains("forge")) {
-        realGameVersion = gameVersion.toLowerCase();
+        final baseVersion = gameVersion.toLowerCase();
         for (var version in Globals.forgeVersions) {
-          if (version.split("-")[0] == realGameVersion) {
+          if (version.split("-")[0] == baseVersion) {
             gameVersion = version;
             break;
           }
         }
-      } else {
-        realGameVersion = gameVersion.toLowerCase().split("-")[0];
       }
 
-      return ModLoaderConfig(
+      return (
         gameVersion: gameVersion,
-        realGameVersion: realGameVersion,
-        isModded: true,
-        additionalArgs: [
-          "-Dfml.ignoreInvalidMinecraftCertificates=true",
-        ],
-        enableClassPath: enableClassPath,
+        additionalArgs: ["-Dfml.ignoreInvalidMinecraftCertificates=true"],
       );
     }
 
     // Vanilla (default)
-    return ModLoaderConfig(
-      gameVersion: gameVersion,
-      realGameVersion: realGameVersion,
-      isModded: false,
-      enableClassPath: enableClassPath,
-    );
+    return (gameVersion: gameVersion, additionalArgs: const []);
   }
 
   /////////// MODDING //////////////
@@ -1451,14 +1584,13 @@ class _MainPageState extends State<MainPage> {
                   final deps = ModrinthUtils.getDependencies(slug);
                   final mcVer = deps['minecraft'] ?? mcVersion;
                   final loaderName = loader;
+                  final modLoader = LaunchPolicy.loaderFromModrinthId(loaderName);
 
                   String gameVersion;
-                  bool isModded = true;
 
                   switch (loaderName) {
                     case 'fabric':
-                      final loaderVer =
-                          deps['fabric-loader'] ?? (Globals.fabricLoaderVersionsResponse?.isNotEmpty == true ? Globals.fabricLoaderVersionsResponse[0]['version'].toString() : '');
+                      final loaderVer = deps['fabric-loader'] ?? (Globals.fabricLoaderVersionsResponse?.isNotEmpty == true ? Globals.fabricLoaderVersionsResponse[0]['version'].toString() : '');
                       gameVersion = loaderVer.isNotEmpty ? 'fabric-loader-$loaderVer-$mcVer' : mcVer;
                       break;
                     case 'forge':
@@ -1475,20 +1607,16 @@ class _MainPageState extends State<MainPage> {
                       break;
                     default:
                       gameVersion = mcVer;
-                      isModded = false;
                   }
 
-                  // Redirect game folder to the modpack instance.
-                  // LaunchUtils uses Globals.gamefoldercontroller.text for:
-                  //   workingDirectory, -Duser.dir, -Djava.library.path, -gameFolder
-                  // Save and restore it: launchMinecraft returns as soon as the
-                  // process is spawned, so the restore is safe.
                   final config = LaunchConfig(
                     gameVersion: gameVersion,
                     productId: null,
-                    isModded: isModded,
+                    isModded: modLoader != ModLoader.vanilla,
                     realGameVersion: mcVer,
-                    enableClassPath: LaunchUtils.shouldEnableClassPath(gameVersion, true),
+                    loader: modLoader,
+                    // I modpack Modrinth forzano sempre la classpath, a prescindere dal loader.
+                    forceClassPath: true,
                     startOnFirstThread: LaunchUtils.shouldUseStartOnFirstThread(mcVer),
                     jvmArgs: [],
                     launcherArgs: [],
@@ -2773,7 +2901,7 @@ class _MainPageState extends State<MainPage> {
                   Globals.accounts.indexOf(account),
                 ),
             ],
-            minTileWidth: 260,
+            minTileWidth: 280,
           ),
         ] else ...[
           /** mostra il messaggio quando non ci sono account */

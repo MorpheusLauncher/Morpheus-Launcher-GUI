@@ -9,6 +9,15 @@
   "home_news_empty_msg": "Cannot fetch minecraft changelog from mojang, please allow this program through your firewall",
 
   "morpheus_products_empty": "Unable to fetch morpheus products",
+  "morpheus_hero_title": "Play with the Morpheus client",
+  "morpheus_hero_subtitle": "Our own 1.8.9 client with OptiFine built in, dedicated PvP mods, a clean look and an integrated music player.",
+  "morpheus_badge_featured": "Featured",
+  "morpheus_feature_optifine": "OptiFine built in",
+  "morpheus_feature_pvp": "Dedicated PvP mods",
+  "morpheus_feature_music": "Built-in music player",
+  "morpheus_play_button": "Play",
+  "morpheus_trust_privacy": "No data collection",
+  "morpheus_trust_no_ads": "No ads, ever",
 
   "vanilla_empty_title": "No vanilla minecraft versions found",
   "vanilla_release_title": "Latest release",

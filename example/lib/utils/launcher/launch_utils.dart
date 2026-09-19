@@ -3,32 +3,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:morpheus_launcher_gui/globals.dart';
 import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/launch_policy.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/version_utils.dart';
 import 'package:morpheus_launcher_gui/utils/widget_utils.dart';
 import 'package:morpheus_launcher_gui/views/main_page.dart';
 
-class LaunchConfig {
-  final String gameVersion;
-  final String? productId;
-  final bool isModded;
-  final String realGameVersion;
-  final bool enableClassPath;
-  final bool startOnFirstThread;
-
-  final List<String> jvmArgs;
-  final List<String> launcherArgs;
-
-  LaunchConfig({
-    required this.gameVersion,
-    this.productId,
-    required this.isModded,
-    required this.realGameVersion,
-    required this.enableClassPath,
-    required this.startOnFirstThread,
-    this.jvmArgs = const [],
-    this.launcherArgs = const [],
-  });
-}
+export 'package:morpheus_launcher_gui/utils/launcher/launch_policy.dart' show LaunchConfig, LaunchPolicy, ModLoader, LaunchProfile;
 
 class LaunchUtils {
   /// Lancia Minecraft con i parametri di LaunchConfig
@@ -69,7 +49,7 @@ class LaunchUtils {
       if (context.mounted) Navigator.pop(context);
 
       // Costruisci args di lancio
-      final args = await _buildLaunchArguments(context, config, gameDirectory: gameDirectory);
+      final args = buildLaunchArguments(config, gameDirectory: gameDirectory);
 
       final Process process;
 
@@ -150,7 +130,7 @@ class LaunchUtils {
   }
 
   /// Costruisce args completi
-  static Future<List<String>> _buildLaunchArguments(BuildContext context, LaunchConfig config, {String? gameDirectory}) async {
+  static List<String> buildLaunchArguments(LaunchConfig config, {String? gameDirectory}) {
     final account = Globals.getAccount()!;
     final args = <String>[];
 
@@ -219,9 +199,12 @@ class LaunchUtils {
       args.addAll(["-gameFolder", gameDirectory ?? Globals.gamefoldercontroller.text]);
     }
 
-    // Launcher args utente
+    // Launcher args utente. "-c" è già stato interpretato come override
+    // manuale della classpath (vedi LaunchPolicy.hasManualClasspathOverride)
+    // e riflesso in config.enableClassPath sopra: va filtrato qui per non
+    // duplicarlo.
     if (Globals.javalaunchercontroller.text.isNotEmpty) {
-      args.addAll(Globals.javalaunchercontroller.text.split(" "));
+      args.addAll(Globals.javalaunchercontroller.text.split(" ").where((arg) => arg != "-c"));
     }
 
     // Launcher args del loader
@@ -286,30 +269,5 @@ class LaunchUtils {
     );
 
     return currentVersionIndex != -1 && startingVersionIndex != -1 && currentVersionIndex <= startingVersionIndex;
-  }
-
-  /// Determina se serve enableClassPath per versioni nuove
-  static bool shouldEnableClassPath(String resolvedGameVersion, bool forcedClasspath) {
-    if (forcedClasspath || Globals.forceClasspath) return true;
-
-    final verList = VersionUtils.getMinecraftVersions(false);
-    final classpathStartIndex = verList.indexWhere(
-      (version) => version["id"] == "25w18a",
-    );
-
-    if (classpathStartIndex == -1) return false;
-
-    final allVersions = VersionUtils.getAllVersions();
-    final baseVersion = VersionUtils.resolveBaseVersion(resolvedGameVersion, allVersions);
-
-    if (baseVersion != null) {
-      final baseIndex = verList.indexWhere(
-        (v) => v["id"] == baseVersion["id"],
-      );
-
-      return baseIndex != -1 && baseIndex <= classpathStartIndex;
-    }
-
-    return false;
   }
 }

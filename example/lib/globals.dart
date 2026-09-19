@@ -480,22 +480,6 @@ class MorpheusProduct {
   }
 }
 
-class ModLoaderConfig {
-  final String gameVersion;
-  final String realGameVersion;
-  final bool isModded;
-  final List<String> additionalArgs;
-  final bool enableClassPath;
-
-  ModLoaderConfig({
-    required this.gameVersion,
-    required this.realGameVersion,
-    required this.isModded,
-    this.additionalArgs = const [],
-    required this.enableClassPath,
-  });
-}
-
 class News {
   String title;
   String type;

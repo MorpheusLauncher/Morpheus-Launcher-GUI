@@ -9,6 +9,15 @@
   "home_news_empty_msg": "Nie można pobrać dziennika zmian Minecrafta od Mojangu. Proszę zezwolić na dostęp temu programowi przez zaporę ogniową",
 
   "morpheus_products_empty": "Nie można pobrać produktów morpheus",
+  "morpheus_hero_title": "Zagraj z klientem Morpheus",
+  "morpheus_hero_subtitle": "Nasz własny klient 1.8.9 z wbudowanym OptiFine, dedykowanymi modami PvP, zadbanym wyglądem i wbudowanym odtwarzaczem muzyki.",
+  "morpheus_badge_featured": "Polecane",
+  "morpheus_feature_optifine": "Wbudowany OptiFine",
+  "morpheus_feature_pvp": "Dedykowane mody PvP",
+  "morpheus_feature_music": "Wbudowany odtwarzacz muzyki",
+  "morpheus_play_button": "Graj",
+  "morpheus_trust_privacy": "Zero zbierania danych",
+  "morpheus_trust_no_ads": "Zero reklam",
 
   "vanilla_empty_title": "Nie znaleziono wersji Vanilla Minecrafta",
   "vanilla_release_title": "Najnowsza wersja",

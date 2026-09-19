@@ -29,6 +29,34 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible de récupérer les produits morpheus';
 
   @override
+  String get morpheus_hero_title => 'Jouez avec le client Morpheus';
+
+  @override
+  String get morpheus_hero_subtitle =>
+      'Notre propre client 1.8.9 avec OptiFine intégré, des mods dédiés au PvP, une esthétique soignée et un lecteur de musique intégré.';
+
+  @override
+  String get morpheus_badge_featured => 'En vedette';
+
+  @override
+  String get morpheus_feature_optifine => 'OptiFine intégré';
+
+  @override
+  String get morpheus_feature_pvp => 'Mods PvP dédiés';
+
+  @override
+  String get morpheus_feature_music => 'Lecteur de musique intégré';
+
+  @override
+  String get morpheus_play_button => 'Jouer';
+
+  @override
+  String get morpheus_trust_privacy => 'Aucune collecte de données';
+
+  @override
+  String get morpheus_trust_no_ads => 'Aucune publicité';
+
+  @override
   String get vanilla_empty_title =>
       'Aucune version de Minecraft Vanilla trouvée';
 

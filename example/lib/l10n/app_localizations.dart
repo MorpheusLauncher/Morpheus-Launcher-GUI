@@ -142,6 +142,60 @@ abstract class AppLocalizations {
   /// **'Unable to fetch morpheus products'**
   String get morpheus_products_empty;
 
+  /// No description provided for @morpheus_hero_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Play with the Morpheus client'**
+  String get morpheus_hero_title;
+
+  /// No description provided for @morpheus_hero_subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Our own 1.8.9 client with OptiFine built in, dedicated PvP mods, a clean look and an integrated music player.'**
+  String get morpheus_hero_subtitle;
+
+  /// No description provided for @morpheus_badge_featured.
+  ///
+  /// In en, this message translates to:
+  /// **'Featured'**
+  String get morpheus_badge_featured;
+
+  /// No description provided for @morpheus_feature_optifine.
+  ///
+  /// In en, this message translates to:
+  /// **'OptiFine built in'**
+  String get morpheus_feature_optifine;
+
+  /// No description provided for @morpheus_feature_pvp.
+  ///
+  /// In en, this message translates to:
+  /// **'Dedicated PvP mods'**
+  String get morpheus_feature_pvp;
+
+  /// No description provided for @morpheus_feature_music.
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in music player'**
+  String get morpheus_feature_music;
+
+  /// No description provided for @morpheus_play_button.
+  ///
+  /// In en, this message translates to:
+  /// **'Play'**
+  String get morpheus_play_button;
+
+  /// No description provided for @morpheus_trust_privacy.
+  ///
+  /// In en, this message translates to:
+  /// **'No data collection'**
+  String get morpheus_trust_privacy;
+
+  /// No description provided for @morpheus_trust_no_ads.
+  ///
+  /// In en, this message translates to:
+  /// **'No ads, ever'**
+  String get morpheus_trust_no_ads;
+
   /// No description provided for @vanilla_empty_title.
   ///
   /// In en, this message translates to:

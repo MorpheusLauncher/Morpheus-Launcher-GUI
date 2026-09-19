@@ -29,7 +29,8 @@ dependencies:
   flutter_secure_storage: any
   simple_3d_renderer: 21.0.0
   flutter_localization: any
-  cached_network_image: any
+  # Version 4 uses standalone UI packages incompatible with Flutter 3.44.6.
+  cached_network_image: ^3.4.1
   file_selector_linux: 0.9.2
   url_launcher_linux: any
   shared_preferences: any
@@ -39,7 +40,9 @@ dependencies:
   file_selector: any
   url_launcher: any
   system_theme: any
-  flutter_html: any
+  flutter_html: ^3.0.0
+  # flutter_html 3.0.0 uses matches(), removed in html 0.15.7.
+  html: '>=0.15.0 <0.15.7'
   text_divider: any
   file_picker: any
   process_run: any

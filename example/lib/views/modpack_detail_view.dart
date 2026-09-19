@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:archive/archive.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -27,6 +28,10 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
   dynamic _latestVersion;
   List<dynamic> _dependencies = [];
   Map<String, dynamic> _modDetails = {};
+
+  // ── Real total download size (.mrpack + every mod it lists) ───
+  bool _isLoadingSize = false;
+  int? _realTotalSize;
 
   // ── Install state ──────────────────────────────
   bool _isInstalled = false;
@@ -69,6 +74,50 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
     }
 
     if (_dependencies.isNotEmpty) _fetchModDetails();
+    if (_latestVersion != null) _computeRealSize();
+  }
+
+  /// The Modrinth API only reports the size of the primary file, which for
+  /// a modpack is the .mrpack itself: a small manifest (modrinth.index.json)
+  /// plus overrides, NOT the mod jars it references. Those are downloaded
+  /// separately at install time, so the "size" shown by the API is wildly
+  /// smaller than the actual download. Fetch the (small) .mrpack, sum the
+  /// fileSize of every listed mod, and use that as the real total instead.
+  Future<void> _computeRealSize() async {
+    final files = (_latestVersion["files"] as List? ?? []);
+    if (files.isEmpty) return;
+
+    final primaryFile = files.firstWhere(
+      (f) => f["primary"] == true,
+      orElse: () => files.first,
+    );
+    final downloadUrl = primaryFile["url"]?.toString() ?? '';
+    if (downloadUrl.isEmpty) return;
+
+    if (mounted) setState(() => _isLoadingSize = true);
+    try {
+      final res = await http.get(Uri.parse(downloadUrl));
+      if (res.statusCode != 200) return;
+
+      final archive = ZipDecoder().decodeBytes(res.bodyBytes);
+      final indexEntry = archive.files.firstWhere(
+        (f) => f.name == 'modrinth.index.json',
+        orElse: () => throw Exception('modrinth.index.json not found in mrpack'),
+      );
+      final index = json.decode(utf8.decode(indexEntry.content as List<int>)) as Map<String, dynamic>;
+
+      final modFiles = (index['files'] as List? ?? []);
+      final modsTotal = modFiles.fold<int>(0, (sum, f) => sum + ((f as Map)['fileSize'] as int? ?? 0));
+
+      // The .mrpack itself (overrides + manifest) is also downloaded.
+      final total = modsTotal + res.bodyBytes.length;
+
+      if (mounted) setState(() => _realTotalSize = total);
+    } catch (e) {
+      debugPrint("Error computing real modpack size: $e");
+    } finally {
+      if (mounted) setState(() => _isLoadingSize = false);
+    }
   }
 
   Future<void> _fetchModDetails() async {
@@ -231,7 +280,9 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
       productId: null,
       isModded: isModded,
       realGameVersion: minecraftVersion,
-      enableClassPath: LaunchUtils.shouldEnableClassPath(gameVersion, true),
+      loader: LaunchPolicy.loaderFromModrinthId(loader),
+      // I modpack Modrinth forzano sempre la classpath, a prescindere dal loader.
+      forceClassPath: true,
       startOnFirstThread: LaunchUtils.shouldUseStartOnFirstThread(minecraftVersion),
     );
 
@@ -311,11 +362,13 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(),
+          _buildHeader(compact: true),
           const SizedBox(height: 24),
           _buildStats(),
           const SizedBox(height: 24),
           _buildActions(),
+          const SizedBox(height: 24),
+          _buildCompatibilityInfo(),
           if ((_projectData?["body"] ?? '').toString().trim().isNotEmpty) ...[
             const SizedBox(height: 24),
             _buildDescription(),
@@ -470,7 +523,11 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
     );
   }
 
-  Widget _buildDesktopSidebar() {
+  /// Scheda "Compatibilità" (versioni Minecraft, loader, ambiente
+  /// client/server) + "Tag". Condivisa tra layout desktop e compatto:
+  /// prima viveva solo dentro _buildDesktopSidebar e spariva del tutto
+  /// sotto i 950px, invece di semplicemente restringersi.
+  Widget _buildCompatibilityInfo() {
     final gameVersions = (_projectData?["game_versions"] as List? ?? []).map((version) => version.toString()).toList().reversed.take(10);
     final loaders = (_projectData?["loaders"] as List? ?? []).map((loader) => loader.toString());
     final categories = (widget.modpack["categories"] as List? ?? []).map((category) => category.toString());
@@ -515,8 +572,8 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        if (categories.isNotEmpty)
+        if (categories.isNotEmpty) ...[
+          const SizedBox(height: 16),
           _buildSidebarCard(
             AppLocalizations.of(context)!.modpack_tags,
             [
@@ -527,8 +584,20 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
               ),
             ],
           ),
-        if (categories.isNotEmpty) const SizedBox(height: 16),
-        if (_dependencies.isNotEmpty) _buildModList(),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildDesktopSidebar() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildCompatibilityInfo(),
+        if (_dependencies.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          _buildModList(),
+        ],
       ],
     );
   }
@@ -711,7 +780,11 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
         children: [
           _buildStatItem(Icons.download, AppLocalizations.of(context)!.modpack_stats_downloads, _formatNumber(widget.modpack["downloads"])),
           _buildStatItem(Icons.update, AppLocalizations.of(context)!.modpack_stats_updated, _formatDate(widget.modpack["date_modified"])),
-          _buildStatItem(Icons.sd_storage, AppLocalizations.of(context)!.modpack_stats_size, _formatSize(_getFileSize())),
+          _buildStatItem(
+            Icons.sd_storage,
+            AppLocalizations.of(context)!.modpack_stats_size,
+            _isLoadingSize ? "…" : _formatSize(_realTotalSize ?? _getFileSize()),
+          ),
         ],
       ),
     );
