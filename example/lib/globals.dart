@@ -3,8 +3,9 @@ library globals;
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 
-import 'package:archive/archive.dart';
+import 'package:archive/archive_io.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:material_color_utilities/material_color_utilities.dart';
@@ -302,165 +303,175 @@ class LauncherUtils {
     return null;
   }
 
-  /** Installa java automaticamente */
+  /** Sets the java required by the version, downloading it if missing */
   static Future<dynamic> JavaAutoInstall(String gameVersion) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    var requiredJavaVersion;
+    String? javaExecutable;
 
-    File versionJsonFile = File('${Globals.gamefoldercontroller.text}/versions/$gameVersion/$gameVersion.json');
-    if (versionJsonFile.existsSync()) {
-      requiredJavaVersion = json.decode(versionJsonFile.readAsStringSync())["javaVersion"]["majorVersion"];
-    } else {
-      var realgameversion = gameVersion;
-      if (gameVersion == "latest") realgameversion = Globals.vanillaVersionsResponse["latest"]["release"];
-      if (gameVersion == "snapshot") realgameversion = Globals.vanillaVersionsResponse["latest"]["snapshot"];
-
-      for (var ver in Globals.vanillaVersionsResponse["versions"]) {
-        if (realgameversion == ver["id"]) {
-          final response = await http.get(
-            Uri.parse(ver["url"]),
-            headers: <String, String>{
-              'Content-Type': 'application/json; charset=UTF-8',
-            },
-          );
-          requiredJavaVersion = json.decode(response.body)["javaVersion"]["majorVersion"];
-        }
-      }
-    }
-
-    var javaBasePath = "${LauncherUtils.getApplicationFolder("morpheus")}/runtime/jre-$requiredJavaVersion";
-    var javaBinPath = "$javaBasePath/bin";
-
+    final requiredJavaVersion = await _getRequiredJavaVersion(gameVersion);
     if (requiredJavaVersion != null) {
-      try {
-        if (Globals.isOnline && !Directory(javaBinPath).existsSync()) {
-          String downloadURL;
-          String fileName;
+      final runtimeDir = "${LauncherUtils.getApplicationFolder("morpheus")}/runtime/jre-$requiredJavaVersion";
+      javaExecutable = _findJavaExecutable(runtimeDir);
 
-          // Se è Java 8 su macOS x64, usa il JRE patchato
-          bool isX64 = !Platform.version.contains("arm64");
-          if (requiredJavaVersion == 8 && Platform.isMacOS && isX64) {
-            downloadURL = "${Urls.morpheusBaseURL}/downloads/jre-8-patched.zip";
-            fileName = "jre-8-patched.zip";
-          } else {
-            // Altrimenti usa l'API Azul come prima
-            final queryParameters = {
-              'java_version': "$requiredJavaVersion",
-              'os': Platform.operatingSystem,
-              'arch': Platform.version.contains("arm64") ? "aarch64" : "x86_64",
-              'archive_type': Platform.isLinux ? 'tar.gz' : 'zip',
-              'java_package_type': 'jdk',
-              'latest': 'true',
-              'javafx_bundled': 'false',
-            };
-            final uri = Uri.https('api.azul.com', '/metadata/v1/zulu/packages', queryParameters);
-            final azulResponse = await http.get(uri, headers: {
-              HttpHeaders.contentTypeHeader: 'application/json',
-            });
-
-            dynamic javaResponse = json.decode(azulResponse.body);
-
-            var filteredPackages = javaResponse.where((package) {
-              String packageName = package["name"] ?? "";
-
-              return !packageName.contains("musl") && !packageName.contains("alpine");
-            }).toList();
-
-            if (filteredPackages.isNotEmpty) {
-              fileName = filteredPackages[0]["name"];
-              downloadURL = filteredPackages[0]["download_url"];
-            } else {
-              fileName = javaResponse[0]["name"];
-              downloadURL = javaResponse[0]["download_url"];
-            }
-          }
-
-          Directory(javaBasePath).createSync(recursive: true);
-
-          final archiveResponse = await http.get(Uri.parse(downloadURL));
-          if (archiveResponse.statusCode == 200) {
-            // Il nome dell'archivio che verrà scaricato
-            String archiveExtension = Platform.isLinux ? '.tar.gz' : '.zip';
-            String archivePath = "$javaBasePath/jre-$requiredJavaVersion$archiveExtension";
-
-            // Scarica l'archivio
-            File(archivePath).writeAsBytesSync(archiveResponse.bodyBytes);
-
-            if (Platform.isMacOS) {
-              // Unzippa da terminale, perchè in dart fa schifo
-              Process unzipProcess = await Process.start("unzip", ["-o", archivePath, "-d", "$javaBasePath/"]);
-
-              // Senza non funziona
-              unzipProcess.stdout.transform(systemEncoding.decoder).forEach((line) {});
-
-              // Quando finisce di estrarre tutto sposta i file nella directory precedente
-              if (await unzipProcess.exitCode == 0) {
-                Directory currentDir = Directory("$javaBasePath/${fileName.replaceAll(".zip", "/")}");
-                List<FileSystemEntity> files = currentDir.listSync();
-                for (FileSystemEntity file in files) {
-                  Process moveProcess = await Process.start("mv", [file.path, javaBasePath]);
-
-                  // Quando finisce di spostare un file alla volta cancella la cartella alla fine
-                  if (await moveProcess.exitCode == 0) {
-                    await Process.start("rmdir", [currentDir.path]);
-                  }
-                }
-              }
-            } else {
-              // Estrazione con la libreria archive per Windows e Linux
-              Archive archive;
-
-              if (Platform.isLinux) {
-                // Decodifica TAR.GZ
-                final bytes = File(archivePath).readAsBytesSync();
-                final tarBytes = const GZipDecoder().decodeBytes(bytes);
-                archive = TarDecoder().decodeBytes(tarBytes);
-              } else {
-                // Decodifica ZIP (Windows)
-                archive = ZipDecoder().decodeBytes(archiveResponse.bodyBytes);
-              }
-
-              // Estrai i file
-              String folderToRemove = fileName.replaceAll(Platform.isLinux ? ".tar.gz" : ".zip", "/");
-              for (final file in archive) {
-                final filePath = "$javaBasePath/${file.name}".replaceAll(folderToRemove, "");
-                if (file.isFile) {
-                  File(filePath)
-                    ..createSync(recursive: true)
-                    ..writeAsBytesSync(file.content);
-                } else {
-                  Directory(filePath).create(recursive: true);
-                }
-              }
-            }
-
-            // Cancella l'archivio
-            File(archivePath).deleteSync();
-
-            if (Platform.isMacOS || Platform.isLinux) {
-              // Imposta permessi di esecuzione su tutta la directory bin
-              await Process.run("chmod", ["-R", "+x", "$javaBasePath/bin"]);
-              // Imposta anche permessi di lettura ed esecuzione ricorsivamente su tutto
-              await Process.run("chmod", ["-R", "755", javaBasePath]);
-            }
-          }
+      if (javaExecutable == null && Globals.isOnline) {
+        try {
+          await _installJava(requiredJavaVersion, runtimeDir);
+          javaExecutable = _findJavaExecutable(runtimeDir);
+        } catch (error) {
+          print("Errore nell'installazione di java $requiredJavaVersion: $error");
         }
-      } catch (error) {
-        print(error);
       }
-
-      if (Directory(javaBinPath).existsSync()) {
-        Globals.javapathcontroller.text = "$javaBinPath/java".replaceAll("//", "/");
-      } else {
-        Globals.javapathcontroller.text = "java";
-      }
-    } else {
-      Globals.javapathcontroller.text = "java";
     }
 
+    Globals.javapathcontroller.text = javaExecutable ?? "java";
     await prefs.setString("javaPath", Globals.javapathcontroller.text);
 
     return true;
+  }
+
+  /** Reads the required java major version from the version json */
+  static Future<int?> _getRequiredJavaVersion(String gameVersion) async {
+    try {
+      final isAlias = gameVersion == "latest" || gameVersion == "snapshot";
+      final localJson = File('${Globals.gamefoldercontroller.text}/versions/$gameVersion/$gameVersion.json');
+
+      // An alias' local json may be outdated, prefer the manifest
+      if (localJson.existsSync() && !(isAlias && Globals.isVersionsAvailable)) {
+        return json.decode(localJson.readAsStringSync())["javaVersion"]?["majorVersion"];
+      }
+
+      final manifest = Globals.vanillaVersionsResponse;
+      if (manifest == null) return null;
+
+      final realGameVersion = isAlias ? manifest["latest"][gameVersion == "latest" ? "release" : "snapshot"] : gameVersion;
+      for (final ver in manifest["versions"]) {
+        if (ver["id"] == realGameVersion) {
+          final response = await http.get(Uri.parse(ver["url"]));
+
+          return json.decode(response.body)["javaVersion"]?["majorVersion"];
+        }
+      }
+    } catch (error) {
+      print("Errore nel rilevamento della versione di java: $error");
+    }
+
+    return null;
+  }
+
+  /** Returns runtimeDir/bin/java if the runtime is fully installed */
+  static String? _findJavaExecutable(String runtimeDir) {
+    final java = File("$runtimeDir/bin/${Platform.isWindows ? "java.exe" : "java"}");
+    if (!java.existsSync() || File("$runtimeDir/.installing").existsSync()) return null;
+
+    return java.path;
+  }
+
+  /** Downloads the runtime and extracts its java home into runtimeDir */
+  static Future<void> _installJava(int javaVersion, String runtimeDir) async {
+    final download = await _getJavaDownload(javaVersion);
+
+    // Marker flags an incomplete install
+    final dir = Directory(runtimeDir);
+    if (dir.existsSync()) dir.deleteSync(recursive: true);
+    dir.createSync(recursive: true);
+    final marker = File("$runtimeDir/.installing")..createSync();
+
+    final archivePath = "$runtimeDir/${download.fileName}";
+    final client = http.Client();
+    try {
+      final response = await client.send(http.Request("GET", Uri.parse(download.url)));
+      if (response.statusCode != 200) {
+        throw HttpException("Download fallito (${response.statusCode})", uri: Uri.parse(download.url));
+      }
+      await response.stream.pipe(File(archivePath).openWrite());
+    } finally {
+      client.close();
+    }
+
+    // Off the UI isolate
+    await Isolate.run(() => _extractJavaHome(archivePath, runtimeDir));
+    File(archivePath).deleteSync();
+
+    if (!Platform.isWindows) {
+      await Process.run("chmod", ["-R", "755", runtimeDir]);
+    }
+
+    marker.deleteSync();
+  }
+
+  /** Extracts only the java home (the folder containing bin/java), skipping the archive's wrapper folders */
+  static Future<void> _extractJavaHome(String archivePath, String runtimeDir) async {
+    // Unpack tar.gz to a temporary .tar to keep memory low
+    var inputPath = archivePath;
+    if (archivePath.endsWith(".tar.gz")) {
+      inputPath = archivePath.substring(0, archivePath.length - 3);
+      final gzip = InputFileStream(archivePath);
+      final tar = OutputFileStream(inputPath);
+      GZipDecoder().decodeStream(gzip, tar);
+      await gzip.close();
+      await tar.close();
+    }
+
+    final input = InputFileStream(inputPath);
+    try {
+      final archive = inputPath.endsWith(".tar") ? TarDecoder().decodeStream(input) : ZipDecoder().decodeStream(input);
+
+      // Shallowest wins (java 8: bin/java over jre/bin/java)
+      final javaEntries = archive.where((entry) => RegExp(r"(^|/)bin/java(\.exe)?$").hasMatch(entry.name)).map((entry) => entry.name).toList()
+        ..sort((a, b) => a.length.compareTo(b.length));
+      if (javaEntries.isEmpty) throw StateError("No java executable in $archivePath");
+
+      // e.g. "zulu25.../" or "zulu25.../Contents/Home/"
+      final javaHome = javaEntries.first.substring(0, javaEntries.first.lastIndexOf("bin/"));
+
+      for (final entry in archive) {
+        if (!entry.name.startsWith(javaHome)) continue;
+
+        final path = "$runtimeDir/${entry.name.substring(javaHome.length)}";
+        if (entry.isSymbolicLink) {
+          Link(path).createSync(entry.symbolicLink!, recursive: true);
+        } else if (entry.isFile) {
+          final output = OutputFileStream(path);
+          entry.writeContent(output);
+          await output.close();
+        } else {
+          Directory(path).createSync(recursive: true);
+        }
+      }
+    } finally {
+      await input.close();
+      if (inputPath != archivePath) File(inputPath).deleteSync();
+    }
+  }
+
+  /** Returns the java archive for this platform */
+  static Future<({String fileName, String url})> _getJavaDownload(int javaVersion) async {
+    final isArm = Platform.version.contains("arm64");
+
+    // Patched JRE for java 8 on macOS x64
+    if (javaVersion == 8 && Platform.isMacOS && !isArm) {
+      return (fileName: "jre-8-patched.zip", url: "${Urls.morpheusBaseURL}/downloads/jre-8-patched.zip");
+    }
+
+    final uri = Uri.https('api.azul.com', '/metadata/v1/zulu/packages', {
+      'java_version': "$javaVersion",
+      'os': Platform.operatingSystem,
+      'arch': isArm ? "aarch64" : "x86_64",
+      'archive_type': Platform.isLinux ? 'tar.gz' : 'zip',
+      'java_package_type': 'jdk',
+      'javafx_bundled': 'false',
+      'crac_supported': 'false',
+      'latest': 'true',
+    });
+    final List packages = json.decode((await http.get(uri)).body);
+
+    // Skip musl/alpine builds
+    final package = packages.firstWhere(
+      (package) => !"${package["name"]}".contains("musl") && !"${package["name"]}".contains("alpine"),
+      orElse: () => throw StateError("Nessun pacchetto java $javaVersion disponibile"),
+    );
+
+    return (fileName: package["name"] as String, url: package["download_url"] as String);
   }
 }
 

@@ -161,51 +161,13 @@ class WidgetUtils {
     TextEditingController controller,
     Function(dynamic value) callback,
   ) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 2, 0, 2),
-      child: Material(
-        elevation: 15,
-        color: background,
-        shadowColor: ColorUtils.defaultShadowColor,
-        borderRadius: BorderRadius.circular(Globals.borderRadius - 2),
-        child: Stack(
-          children: [
-            Focus(
-              onFocusChange: (hasFocus) async {
-                callback(hasFocus);
-              },
-              child: TextField(
-                style: TextStyle(
-                  color: foreground,
-                  fontFamily: 'Comfortaa',
-                  shadows: [
-                    Shadow(
-                      color: ColorUtils.defaultShadowColor,
-                      blurRadius: 2.0,
-                      offset: const Offset(2.0, 2.0),
-                    ),
-                  ],
-                ),
-                controller: controller,
-                decoration: InputDecoration(
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Colors.transparent),
-                    borderRadius: BorderRadius.circular(Globals.borderRadius - 2),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Colors.white),
-                    borderRadius: BorderRadius.circular(Globals.borderRadius - 2),
-                  ),
-                  hintText: hint,
-                  hintStyle: customTextStyle(16, FontWeight.w300, foreground),
-                  filled: false,
-                ),
-              ),
-            ),
-            if (child != null) child,
-          ],
-        ),
-      ),
+    return _SettingTextItem(
+      child: child,
+      background: background,
+      foreground: foreground,
+      hint: hint,
+      controller: controller,
+      callback: callback,
     );
   }
 
@@ -705,6 +667,90 @@ class _WindowButtonsState extends State<WindowButtons> {
         MaximizeWindowButton(colors: buttonColors, onPressed: maximizeOrRestore),
         CloseWindowButton(colors: closeButtonColors),
       ],
+    );
+  }
+}
+
+/// Campo di testo delle impostazioni: il bordo di focus viene disegnato
+/// sull'intero contenitore (testo + eventuali pulsanti a destra) invece che
+/// sul solo TextField, così non compare più una linea verticale in mezzo
+/// alla riga quando il campo è selezionato.
+class _SettingTextItem extends StatefulWidget {
+  const _SettingTextItem({
+    required this.child,
+    required this.background,
+    required this.foreground,
+    required this.hint,
+    required this.controller,
+    required this.callback,
+  });
+
+  final dynamic child;
+  final Color background;
+  final Color foreground;
+  final String hint;
+  final TextEditingController controller;
+  final Function(dynamic value) callback;
+
+  @override
+  State<_SettingTextItem> createState() => _SettingTextItemState();
+}
+
+class _SettingTextItemState extends State<_SettingTextItem> {
+  bool _hasFocus = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(Globals.borderRadius - 2);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 2, 0, 2),
+      child: Material(
+        elevation: 15,
+        color: widget.background,
+        shadowColor: ColorUtils.defaultShadowColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: radius,
+          side: BorderSide(
+            color: _hasFocus ? ColorUtils.dynamicAccentColor : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        child: Stack(
+          children: [
+            Focus(
+              onFocusChange: (hasFocus) async {
+                setState(() => _hasFocus = hasFocus);
+                widget.callback(hasFocus);
+              },
+              child: TextField(
+                style: TextStyle(
+                  color: widget.foreground,
+                  fontFamily: 'Comfortaa',
+                  shadows: [
+                    Shadow(
+                      color: ColorUtils.defaultShadowColor,
+                      blurRadius: 2.0,
+                      offset: const Offset(2.0, 2.0),
+                    ),
+                  ],
+                ),
+                controller: widget.controller,
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: const EdgeInsets.fromLTRB(14, 18, 14, 16),
+                  hintText: widget.hint,
+                  hintStyle: WidgetUtils.customTextStyle(16, FontWeight.w300, widget.foreground),
+                  filled: false,
+                ),
+              ),
+            ),
+            if (widget.child != null) widget.child,
+          ],
+        ),
+      ),
     );
   }
 }

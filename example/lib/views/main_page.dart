@@ -580,8 +580,8 @@ class _MainPageState extends State<MainPage> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
+            ColorUtils.dynamicAccentColor.withAlpha(80),
             ColorUtils.dynamicAccentColor.withAlpha(60),
-            ColorUtils.dynamicPrimaryForegroundColor,
           ],
         ),
         borderRadius: BorderRadius.circular(Globals.borderRadius + 4),
@@ -589,7 +589,7 @@ class _MainPageState extends State<MainPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(Icons.auto_awesome, color: ColorUtils.dynamicAccentColor, size: 34),
+          Icon(Icons.auto_awesome, color: ColorUtils.primaryFontColor, size: 34),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -624,23 +624,21 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  /// Trust badge dell'hero (privacy, niente pubblicità): stile pensato per
-  /// stare sullo sfondo chiaro dell'hero, a differenza delle feature chip
-  /// del client che vivono sopra uno screenshot scuro.
+  /// Hero trust badges (privacy, no ads)
   Widget _buildMorpheusTrustChip(IconData icon, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: ColorUtils.dynamicAccentColor.withAlpha(30),
+        color: Colors.white.withAlpha(38),
         borderRadius: const BorderRadius.all(Radius.circular(20)),
-        border: Border.all(color: ColorUtils.dynamicAccentColor.withAlpha(90)),
+        border: Border.all(color: Colors.white.withAlpha(60)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: ColorUtils.dynamicAccentColor),
+          Icon(icon, size: 13, color: Colors.white),
           const SizedBox(width: 5),
-          Text(label, style: WidgetUtils.customTextStyle(11, FontWeight.w600, ColorUtils.primaryFontColor)),
+          _buildChipLabel(label, FontWeight.w600),
         ],
       ),
     );
@@ -659,9 +657,17 @@ class _MainPageState extends State<MainPage> {
         children: [
           Icon(icon, size: 12, color: Colors.white),
           const SizedBox(width: 4),
-          Text(label, style: WidgetUtils.customTextStyle(11, FontWeight.w500, Colors.white)),
+          _buildChipLabel(label, FontWeight.w500),
         ],
       ),
+    );
+  }
+
+  /// Comfortaa sits ~0.07em high in its line box: nudge the label down to center it
+  Widget _buildChipLabel(String label, FontWeight weight) {
+    return Transform.translate(
+      offset: const Offset(0, 0.75),
+      child: Text(label, style: WidgetUtils.customTextStyle(11, weight, Colors.white)),
     );
   }
 
@@ -712,7 +718,7 @@ class _MainPageState extends State<MainPage> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Icon(Icons.star, size: 13, color: ColorUtils.dynamicAccentColor),
+                    Icon(Icons.star, size: 13, color: ColorUtils.primaryFontColor),
                     const SizedBox(width: 4),
                     Text(
                       AppLocalizations.of(context)!.morpheus_badge_featured,
@@ -790,6 +796,7 @@ class _MainPageState extends State<MainPage> {
                             );
                           },
                           icon: const Icon(Icons.rocket_launch, size: 20, color: Colors.white),
+                          iconAlignment: IconAlignment.end,
                           label: Text(
                             AppLocalizations.of(context)!.morpheus_play_button,
                             style: WidgetUtils.customTextStyle(15, FontWeight.w700, Colors.white),
@@ -1590,7 +1597,8 @@ class _MainPageState extends State<MainPage> {
 
                   switch (loaderName) {
                     case 'fabric':
-                      final loaderVer = deps['fabric-loader'] ?? (Globals.fabricLoaderVersionsResponse?.isNotEmpty == true ? Globals.fabricLoaderVersionsResponse[0]['version'].toString() : '');
+                      final loaderVer =
+                          deps['fabric-loader'] ?? (Globals.fabricLoaderVersionsResponse?.isNotEmpty == true ? Globals.fabricLoaderVersionsResponse[0]['version'].toString() : '');
                       gameVersion = loaderVer.isNotEmpty ? 'fabric-loader-$loaderVer-$mcVer' : mcVer;
                       break;
                     case 'forge':
@@ -2104,7 +2112,7 @@ class _MainPageState extends State<MainPage> {
                       /** Java selection */
                       WidgetUtils.buildSettingTextItem(
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(0, 3, 3, 0),
+                          padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
@@ -2178,7 +2186,7 @@ class _MainPageState extends State<MainPage> {
                       /** Java ram */
                       WidgetUtils.buildSettingTextItem(
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(0, 3, 3, 0),
+                          padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
@@ -2206,7 +2214,7 @@ class _MainPageState extends State<MainPage> {
                       /** Java VM args */
                       WidgetUtils.buildSettingTextItem(
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(0, 3, 3, 0),
+                          padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
@@ -2234,7 +2242,7 @@ class _MainPageState extends State<MainPage> {
                       /** Launcher args */
                       WidgetUtils.buildSettingTextItem(
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(0, 3, 3, 0),
+                          padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
@@ -2316,7 +2324,7 @@ class _MainPageState extends State<MainPage> {
                   padding: const EdgeInsets.fromLTRB(6, 0, 6, 4),
                   child: WidgetUtils.buildSettingTextItem(
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(0, 3, 3, 0),
+                      padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
