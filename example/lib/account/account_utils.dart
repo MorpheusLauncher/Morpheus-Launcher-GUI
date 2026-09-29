@@ -47,7 +47,7 @@ class Account {
       uuid: json['uuid'],
       accessToken: json['accessToken'],
       refreshToken: json['refreshToken'],
-      isPremium: json['isPremium'],
+      isPremium: json['isPremium'] ?? false,
       isSlimSkin: json['isSlimSkin'] ?? false,
       isElyBy: json['isElyBy'] ?? false,
     );
@@ -76,18 +76,43 @@ void saveAccounts() {
   saveAccountListToJson(Globals.accounts, filePath);
 }
 
+// Legge una lista di account da un file JSON. Lancia FormatException se il file
+// non esiste, non è una lista di account validi o è vuoto.
 List<Account> importAccountListFromJsonPlain(String filePath) {
   final file = File(filePath);
 
   if (!file.existsSync()) {
-    return [];
+    throw FormatException("File not found: $filePath");
   }
 
-  final jsonString = file.readAsStringSync();
-  final List<dynamic> jsonList = json.decode(jsonString);
-  final accountList = jsonList.map((json) => Account.fromJson(json)).toList();
+  final decoded = json.decode(file.readAsStringSync());
+  if (decoded is! List || decoded.isEmpty) {
+    throw const FormatException("The file does not contain an account list");
+  }
 
-  return accountList.cast<Account>();
+  return decoded.map<Account>((entry) {
+    if (entry is! Map<String, dynamic> ||
+        entry['username'] is! String ||
+        entry['uuid'] is! String ||
+        entry['accessToken'] is! String ||
+        entry['refreshToken'] is! String) {
+      throw const FormatException("Invalid account entry in file");
+    }
+    return Account.fromJson(entry);
+  }).toList();
+}
+
+// Aggiunge a Globals.accounts gli account importati non ancora presenti (per uuid)
+int mergeImportedAccounts(List<Account> imported) {
+  final known = Globals.accounts.map((a) => a.uuid).toSet();
+  var added = 0;
+  for (final account in imported) {
+    if (known.add(account.uuid)) {
+      Globals.accounts.add(account);
+      added++;
+    }
+  }
+  return added;
 }
 
 void exportAccountListToJsonPlain(List<Account> accountList, String filePath) {

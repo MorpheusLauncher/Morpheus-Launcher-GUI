@@ -2446,15 +2446,26 @@ class _MainPageState extends State<MainPage> {
               ColorUtils.dynamicSecondaryForegroundColor,
               Colors.white,
               () async {
-                final result = await FilePicker.pickFiles(
-                  type: FileType.custom,
-                  allowedExtensions: ['json'],
-                );
-                if (result != null && result.files.single.path != null) {
-                  final path = result.files.single.path!;
-                  final importedAccounts = importAccountListFromJsonPlain(path);
-                  Globals.accounts = importedAccounts;
-                  saveAccounts();
+                try {
+                  final result = await FilePicker.pickFiles(
+                    type: FileType.custom,
+                    allowedExtensions: ['json'],
+                  );
+                  if (result == null || result.files.single.path == null) return;
+                  final importedAccounts = importAccountListFromJsonPlain(result.files.single.path!);
+                  if (mergeImportedAccounts(importedAccounts) > 0) {
+                    saveAccounts();
+                    if (mounted) setState(() {});
+                  }
+                } catch (e) {
+                  debugPrint("Account import failed: $e");
+                  if (!mounted) return;
+                  WidgetUtils.showMessageDialog(
+                    context,
+                    AppLocalizations.of(context)!.generic_error_msg,
+                    e.toString(),
+                    () => Navigator.pop(context),
+                  );
                 }
               },
               AppLocalizations.of(context)!.settings_account_import,
@@ -2465,14 +2476,25 @@ class _MainPageState extends State<MainPage> {
               ColorUtils.dynamicSecondaryForegroundColor,
               Colors.white,
               () async {
-                final result = await FilePicker.saveFile(
-                  dialogTitle: 'Save accounts as JSON',
-                  fileName: 'accounts_plain.json',
-                  type: FileType.custom,
-                  allowedExtensions: ['json'],
-                );
-                if (result != null) {
-                  exportAccountListToJsonPlain(Globals.accounts, result);
+                try {
+                  final result = await FilePicker.saveFile(
+                    dialogTitle: 'Save accounts as JSON',
+                    fileName: 'accounts_plain.json',
+                    type: FileType.custom,
+                    allowedExtensions: ['json'],
+                  );
+                  if (result != null) {
+                    exportAccountListToJsonPlain(Globals.accounts, result);
+                  }
+                } catch (e) {
+                  debugPrint("Account export failed: $e");
+                  if (!mounted) return;
+                  WidgetUtils.showMessageDialog(
+                    context,
+                    AppLocalizations.of(context)!.generic_error_msg,
+                    e.toString(),
+                    () => Navigator.pop(context),
+                  );
                 }
               },
               AppLocalizations.of(context)!.settings_account_export,
