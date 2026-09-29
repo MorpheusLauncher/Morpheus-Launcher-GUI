@@ -593,6 +593,8 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        _buildStats(),
+        const SizedBox(height: 16),
         _buildCompatibilityInfo(),
         if (_dependencies.isNotEmpty) ...[
           const SizedBox(height: 16),
@@ -742,6 +744,7 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
 
     if (compact) {
       return Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: ColorUtils.dynamicPrimaryForegroundColor,
@@ -769,14 +772,13 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
 
   Widget _buildStats() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20),
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
       decoration: BoxDecoration(
         color: ColorUtils.dynamicPrimaryForegroundColor,
         borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildStatItem(Icons.download, AppLocalizations.of(context)!.modpack_stats_downloads, _formatNumber(widget.modpack["downloads"])),
           _buildStatItem(Icons.update, AppLocalizations.of(context)!.modpack_stats_updated, _formatDate(widget.modpack["date_modified"])),
@@ -791,14 +793,24 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
   }
 
   Widget _buildStatItem(IconData icon, String label, String value) {
-    return Column(
-      children: [
-        Icon(icon, color: ColorUtils.dynamicAccentColor, size: 24),
-        const SizedBox(height: 8),
-        Text(label.toUpperCase(), style: WidgetUtils.customTextStyle(10, FontWeight.w500, ColorUtils.secondaryFontColor)),
-        const SizedBox(height: 4),
-        Text(value, style: WidgetUtils.customTextStyle(16, FontWeight.w600, ColorUtils.primaryFontColor)),
-      ],
+    // Expanded + FittedBox: nella sidebar desktop (310px) le tre colonne
+    // devono restringersi invece di andare in overflow.
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(icon, color: ColorUtils.dynamicAccentColor, size: 24),
+          const SizedBox(height: 8),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(label.toUpperCase(), style: WidgetUtils.customTextStyle(10, FontWeight.w500, ColorUtils.secondaryFontColor)),
+          ),
+          const SizedBox(height: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(value, style: WidgetUtils.customTextStyle(16, FontWeight.w600, ColorUtils.primaryFontColor)),
+          ),
+        ],
+      ),
     );
   }
 
