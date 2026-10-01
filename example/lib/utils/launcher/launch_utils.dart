@@ -58,10 +58,11 @@ class LaunchUtils {
         final lastSlashIndex = javaPath.lastIndexOf('/');
 
         if (lastSlashIndex > 0) {
-          // Su linux è meglio usare una subshell per evitare vari casini
+          // Su linux è meglio usare una shell per evitare vari casini.
+          // Si usa `exec` così java rimpiazza la shell: process.kill() colpisce java e non solo sh
           final javaDir = javaPath.substring(0, lastSlashIndex);
           final javaArgs = args.map(_escapeShellArg).join(' ');
-          process = await Process.start('sh', ['-c', '(cd "$javaDir" && ./java $javaArgs)']);
+          process = await Process.start('sh', ['-c', "cd '${javaDir.replaceAll("'", "'\\''")}' && exec ./java $javaArgs"]);
         } else {
           process = await Process.start(
             javaPath,
