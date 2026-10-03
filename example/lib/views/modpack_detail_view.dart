@@ -568,7 +568,9 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
             ),
             const SizedBox(height: 8),
             _buildTag(
-              _projectData?["server_side"] == "required" ? AppLocalizations.of(context)!.modpack_client_server : AppLocalizations.of(context)!.modpack_client_side,
+              _projectData?["server_side"] == "required"
+                  ? AppLocalizations.of(context)!.modpack_client_server
+                  : AppLocalizations.of(context)!.modpack_client_side,
             ),
           ],
         ),
@@ -604,16 +606,22 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
     );
   }
 
+  /// Contenitore standard della vista: stesso stile (Material + ombra) delle
+  /// card del resto del launcher.
+  Widget _buildCard({required Widget child, EdgeInsetsGeometry padding = EdgeInsets.zero, Clip clipBehavior = Clip.none}) {
+    return Material(
+      elevation: 15,
+      color: ColorUtils.dynamicPrimaryForegroundColor,
+      shadowColor: ColorUtils.defaultShadowColor,
+      borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
+      clipBehavior: clipBehavior,
+      child: Padding(padding: padding, child: child),
+    );
+  }
+
   Widget _buildSidebarCard(String title, List<Widget> children) {
-    return Container(
+    return _buildCard(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: ColorUtils.dynamicPrimaryForegroundColor,
-        borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
-        border: Border.all(
-          color: ColorUtils.secondaryFontColor.withValues(alpha: 0.12),
-        ),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -743,19 +751,17 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
     );
 
     if (compact) {
-      return Container(
+      return SizedBox(
         width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: ColorUtils.dynamicPrimaryForegroundColor,
-          borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
-        ),
-        child: Column(
-          children: [
-            image,
-            const SizedBox(height: 18),
-            information,
-          ],
+        child: _buildCard(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              image,
+              const SizedBox(height: 18),
+              information,
+            ],
+          ),
         ),
       );
     }
@@ -771,13 +777,8 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
   }
 
   Widget _buildStats() {
-    return Container(
+    return _buildCard(
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
-      decoration: BoxDecoration(
-        color: ColorUtils.dynamicPrimaryForegroundColor,
-        borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))],
-      ),
       child: Row(
         children: [
           _buildStatItem(Icons.download, AppLocalizations.of(context)!.modpack_stats_downloads, _formatNumber(widget.modpack["downloads"])),
@@ -818,12 +819,8 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
   Widget _buildDownloadButton({bool compact = false}) {
     // ── Installing ─────────────────────────────────────────────────────────
     if (_isInstalling) {
-      return Container(
+      return _buildCard(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: ColorUtils.dynamicPrimaryForegroundColor,
-          borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
-        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -947,12 +944,8 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
       children: [
         Text(AppLocalizations.of(context)!.modpack_description_title, style: WidgetUtils.customTextStyle(20, FontWeight.bold, ColorUtils.primaryFontColor)),
         const SizedBox(height: 16),
-        Container(
+        _buildCard(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: ColorUtils.dynamicPrimaryForegroundColor,
-            borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
-          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: _parseDescriptionSegments(body),
@@ -1098,16 +1091,13 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
           ],
         ),
         const SizedBox(height: 16),
-        Container(
-          decoration: BoxDecoration(
-            color: ColorUtils.dynamicPrimaryForegroundColor,
-            borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
-          ),
+        _buildCard(
+          clipBehavior: Clip.antiAlias,
           child: ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: _dependencies.length,
-            separatorBuilder: (context, index) => Divider(color: Colors.white.withOpacity(0.05), height: 1),
+            separatorBuilder: (context, index) => Divider(color: ColorUtils.secondaryFontColor.withValues(alpha: 0.12), height: 1),
             itemBuilder: (context, index) => _buildModItem(_dependencies[index]),
           ),
         ),

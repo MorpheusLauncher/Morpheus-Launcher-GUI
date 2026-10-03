@@ -155,8 +155,9 @@ class _ModrinthViewState extends State<ModrinthView> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Material(
-        elevation: 0,
+        elevation: 15,
         color: ColorUtils.dynamicPrimaryForegroundColor,
+        shadowColor: ColorUtils.defaultShadowColor,
         borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -194,8 +195,9 @@ class _ModrinthViewState extends State<ModrinthView> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
       child: Material(
-        elevation: 0,
+        elevation: 15,
         color: ColorUtils.dynamicPrimaryForegroundColor,
+        shadowColor: ColorUtils.defaultShadowColor,
         borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -282,7 +284,7 @@ class _ModrinthViewState extends State<ModrinthView> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        elevation: 0,
+        elevation: 15,
         color: ColorUtils.dynamicPrimaryForegroundColor,
         shadowColor: ColorUtils.defaultShadowColor,
         borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
@@ -306,11 +308,11 @@ class _ModrinthViewState extends State<ModrinthView> {
                     width: 100,
                     height: 100,
                     fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(color: Colors.white.withOpacity(0.05)),
+                    placeholder: (context, url) => Container(color: ColorUtils.dynamicSecondaryForegroundColor),
                     errorWidget: (context, url, error) => Container(
                       width: 100,
                       height: 100,
-                      color: Colors.white.withOpacity(0.05),
+                      color: ColorUtils.dynamicSecondaryForegroundColor,
                       child: Icon(Icons.apps, color: ColorUtils.secondaryFontColor),
                     ),
                   ),

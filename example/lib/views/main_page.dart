@@ -573,72 +573,66 @@ class _MainPageState extends State<MainPage> {
   /// due righe perché scegliere il client Morpheus invece di vanilla/mod,
   /// dato che l'API dei prodotti non fornisce alcuna descrizione.
   Widget _buildMorpheusHero() {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            ColorUtils.dynamicAccentColor.withAlpha(80),
-            ColorUtils.dynamicAccentColor.withAlpha(60),
+    return Material(
+      elevation: 15,
+      color: ColorUtils.dynamicPrimaryForegroundColor,
+      shadowColor: ColorUtils.defaultShadowColor,
+      borderRadius: BorderRadius.circular(Globals.borderRadius + 4),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(Icons.auto_awesome, color: ColorUtils.secondaryFontColor, size: 34),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!.morpheus_hero_title,
+                    style: WidgetUtils.customTextStyle(20, FontWeight.w700, ColorUtils.secondaryFontColor),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    AppLocalizations.of(context)!.morpheus_hero_subtitle,
+                    style: WidgetUtils.customTextStyle(13, FontWeight.w400, ColorUtils.secondaryFontColor),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _buildMorpheusTrustChip(Icons.shield_outlined, AppLocalizations.of(context)!.morpheus_trust_privacy),
+                      _buildMorpheusTrustChip(Icons.block, AppLocalizations.of(context)!.morpheus_trust_no_ads),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
-        borderRadius: BorderRadius.circular(Globals.borderRadius + 4),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Icon(Icons.auto_awesome, color: ColorUtils.primaryFontColor, size: 34),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  AppLocalizations.of(context)!.morpheus_hero_title,
-                  style: WidgetUtils.customTextStyle(20, FontWeight.w700, ColorUtils.primaryFontColor),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  AppLocalizations.of(context)!.morpheus_hero_subtitle,
-                  style: WidgetUtils.customTextStyle(13, FontWeight.w400, ColorUtils.secondaryFontColor),
-                ),
-                const SizedBox(height: 10),
-                // A differenza delle feature del client (OptiFine, PvP, ...)
-                // questi riguardano l'intero ecosistema Morpheus: per questo
-                // vivono nell'hero e non nella singola card del prodotto.
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _buildMorpheusTrustChip(Icons.shield_outlined, AppLocalizations.of(context)!.morpheus_trust_privacy),
-                    _buildMorpheusTrustChip(Icons.block, AppLocalizations.of(context)!.morpheus_trust_no_ads),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
 
   /// Hero trust badges (privacy, no ads)
   Widget _buildMorpheusTrustChip(IconData icon, String label) {
+    final Color fg = ColorUtils.primaryFontColor;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(38),
+        color: ColorUtils.dynamicSecondaryForegroundColor,
         borderRadius: const BorderRadius.all(Radius.circular(20)),
-        border: Border.all(color: Colors.white.withAlpha(60)),
+        border: Border.all(color: fg.withAlpha(50)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: Colors.white),
+          Icon(icon, size: 13, color: fg),
           const SizedBox(width: 5),
-          _buildChipLabel(label, FontWeight.w600),
+          _buildChipLabel(label, FontWeight.w600, color: fg),
         ],
       ),
     );
@@ -664,10 +658,10 @@ class _MainPageState extends State<MainPage> {
   }
 
   /// Comfortaa sits ~0.07em high in its line box: nudge the label down to center it
-  Widget _buildChipLabel(String label, FontWeight weight) {
+  Widget _buildChipLabel(String label, FontWeight weight, {Color color = Colors.white}) {
     return Transform.translate(
       offset: const Offset(0, 0.75),
-      child: Text(label, style: WidgetUtils.customTextStyle(11, weight, Colors.white)),
+      child: Text(label, style: WidgetUtils.customTextStyle(11, weight, color)),
     );
   }
 
@@ -718,11 +712,12 @@ class _MainPageState extends State<MainPage> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Icon(Icons.star, size: 13, color: ColorUtils.primaryFontColor),
+                    // Sta sopra l'immagine scura della card: sempre bianco
+                    const Icon(Icons.star, size: 13, color: Colors.white),
                     const SizedBox(width: 4),
                     Text(
                       AppLocalizations.of(context)!.morpheus_badge_featured,
-                      style: WidgetUtils.customTextStyle(11, FontWeight.w700, ColorUtils.secondaryFontColor).copyWith(height: 1),
+                      style: WidgetUtils.customTextStyle(11, FontWeight.w700, Colors.white.withAlpha(230)).copyWith(height: 1),
                     ),
                   ],
                 ),
@@ -1337,7 +1332,7 @@ class _MainPageState extends State<MainPage> {
               height: 55,
               width: double.infinity,
               child: Material(
-                elevation: 0,
+                elevation: 15,
                 color: ColorUtils.dynamicPrimaryForegroundColor,
                 shadowColor: ColorUtils.defaultShadowColor,
                 borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
