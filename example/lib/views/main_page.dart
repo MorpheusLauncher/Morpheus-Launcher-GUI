@@ -690,7 +690,7 @@ class _MainPageState extends State<MainPage> {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black.withAlpha(210)],
+                    colors: [Colors.transparent, Colors.black.withAlpha(160)],
                     stops: const [0.25, 0.85],
                   ),
                 ),
