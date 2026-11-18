@@ -7,6 +7,7 @@ class GlassMorphism extends StatelessWidget {
   final double blur;
   final double opacity;
   final double radius;
+  final Color? color;
   final Widget child;
 
   const GlassMorphism({
@@ -14,6 +15,7 @@ class GlassMorphism extends StatelessWidget {
     required this.blur,
     required this.opacity,
     required this.radius,
+    this.color,
     required this.child,
   });
 
@@ -23,13 +25,15 @@ class GlassMorphism extends StatelessWidget {
       borderRadius: BorderRadius.circular(radius),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-        child: Container(
+        // Avoid compositing the filtered backdrop over the original content when an ancestor renders into a temporary layer.
+        blendMode: BlendMode.src,
+        child: DecoratedBox(
           decoration: BoxDecoration(
-            color: ColorUtils.dynamicBackgroundColor.withOpacity(opacity),
+            color: (color ?? ColorUtils.dynamicBackgroundColor).withValues(alpha: opacity),
             borderRadius: BorderRadius.circular(radius),
             border: Border.all(
               width: 1,
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withValues(alpha: 0.1),
             ),
           ),
           child: child,

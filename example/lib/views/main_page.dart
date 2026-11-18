@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' show ImageFilter;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
@@ -27,8 +28,6 @@ import 'package:morpheus_launcher_gui/utils/widget_utils.dart';
 import 'package:morpheus_launcher_gui/views/modrinth_view.dart';
 import 'package:morpheus_launcher_gui/views/widget_news.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:simple_3d/simple_3d.dart';
-import 'package:simple_3d_renderer/simple_3d_renderer.dart';
 import 'package:system_theme/system_theme.dart';
 import 'package:text_divider/text_divider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -56,17 +55,7 @@ class _MainPageState extends State<MainPage> {
   }
 
   Future<void> rebuild() async {
-    if (Globals.getAccount() != null) {
-      ThreeDimensionalViewer.objs.clear();
-      ThreeDimensionalViewer.setupUV(Globals.getAccount()!.isSlimSkin);
-      ThreeDimensionalViewer.texturizePlayerModel();
-      Timer.periodic(const Duration(milliseconds: 100), (timer) async {
-        setState(() {
-          ThreeDimensionalViewer.isLoaded = ThreeDimensionalViewer.isLoaded;
-        });
-        timer.cancel();
-      });
-    }
+    if (mounted) setState(() {});
   }
 
   @override
@@ -616,43 +605,61 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
+  /// Glass background shared by the Morpheus badges and feature chips.
+  Widget _buildMorpheusChipGlass({required double radius, required Widget child}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        blendMode: BlendMode.src,
+        child: child,
+      ),
+    );
+  }
+
   /// Hero trust badges (privacy, no ads)
   Widget _buildMorpheusTrustChip(IconData icon, String label) {
     final Color fg = ColorUtils.primaryFontColor;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: ColorUtils.dynamicSecondaryForegroundColor,
-        borderRadius: const BorderRadius.all(Radius.circular(20)),
-        border: Border.all(color: fg.withAlpha(50)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: fg),
-          const SizedBox(width: 5),
-          _buildChipLabel(label, FontWeight.w600, color: fg),
-        ],
+    return _buildMorpheusChipGlass(
+      radius: 20,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: ColorUtils.dynamicSecondaryForegroundColor,
+          borderRadius: const BorderRadius.all(Radius.circular(20)),
+          border: Border.all(color: fg.withAlpha(50)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: fg),
+            const SizedBox(width: 5),
+            _buildChipLabel(label, FontWeight.w600, color: fg),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildMorpheusFeatureChip(IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(38),
-        borderRadius: const BorderRadius.all(Radius.circular(10)),
-        border: Border.all(color: Colors.white.withAlpha(60)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: Colors.white),
-          const SizedBox(width: 4),
-          _buildChipLabel(label, FontWeight.w500),
-        ],
+    return _buildMorpheusChipGlass(
+      radius: 10,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: Colors.white.withAlpha(38),
+          borderRadius: const BorderRadius.all(Radius.circular(10)),
+          border: Border.all(color: Colors.white.withAlpha(60)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 12, color: Colors.white),
+            const SizedBox(width: 4),
+            _buildChipLabel(label, FontWeight.w500),
+          ],
+        ),
       ),
     );
   }
@@ -690,7 +697,7 @@ class _MainPageState extends State<MainPage> {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black.withAlpha(160)],
+                    colors: [Colors.black.withAlpha(20), Colors.black.withAlpha(160)],
                     stops: const [0.25, 0.85],
                   ),
                 ),
@@ -701,26 +708,9 @@ class _MainPageState extends State<MainPage> {
             Positioned(
               top: 12,
               left: 10,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(38),
-                  borderRadius: const BorderRadius.all(Radius.circular(8)),
-                  boxShadow: [BoxShadow(color: Colors.black.withAlpha(60), blurRadius: 6, offset: const Offset(0, 2))],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Sta sopra l'immagine scura della card: sempre bianco
-                    const Icon(Icons.star, size: 13, color: Colors.white),
-                    const SizedBox(width: 4),
-                    Text(
-                      AppLocalizations.of(context)!.morpheus_badge_featured,
-                      style: WidgetUtils.customTextStyle(11, FontWeight.w700, Colors.white.withAlpha(230)).copyWith(height: 1),
-                    ),
-                  ],
-                ),
+              child: _buildMorpheusFeatureChip(
+                Icons.star,
+                AppLocalizations.of(context)!.morpheus_badge_featured,
               ),
             ),
 
@@ -1592,8 +1582,7 @@ class _MainPageState extends State<MainPage> {
 
                   switch (loaderName) {
                     case 'fabric':
-                      final loaderVer =
-                          deps['fabric-loader'] ?? (Globals.fabricLoaderVersionsResponse?.isNotEmpty == true ? Globals.fabricLoaderVersionsResponse[0]['version'].toString() : '');
+                      final loaderVer = deps['fabric-loader'] ?? (Globals.fabricLoaderVersionsResponse?.isNotEmpty == true ? Globals.fabricLoaderVersionsResponse[0]['version'].toString() : '');
                       gameVersion = loaderVer.isNotEmpty ? 'fabric-loader-$loaderVer-$mcVer' : mcVer;
                       break;
                     case 'forge':
@@ -2586,16 +2575,10 @@ class _MainPageState extends State<MainPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           /** Mostra la skin del player a destra */
-          if (Globals.getAccount() != null && ThreeDimensionalViewer.objs.isNotEmpty) ...[
-            Sp3dRenderer(
-              const Size(150, 280),
-              const Sp3dV2D(75, 125),
-              ThreeDimensionalViewer.world,
-              Sp3dCamera(Sp3dV3D(0, 0, 3000), 1500),
-              Sp3dLight(Sp3dV3D(0, 0, 0), syncCam: true),
-              allowUserWorldZoom: false,
-              allowUserWorldRotation: true,
-              useClipping: true,
+          if (Globals.getAccount() case final account?) ...[
+            MinecraftSkinViewer(
+              key: ValueKey('${account.uuid}:${account.isPremium}:${account.isElyBy}'),
+              account: account,
             ),
           ],
           const SizedBox(height: 5),

@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_switch/flutter_switch.dart';
 import 'package:morpheus_launcher_gui/globals.dart';
 import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
+import 'package:morpheus_launcher_gui/utils/glass_morphism.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/version_utils.dart';
 import 'package:morpheus_launcher_gui/utils/logging/virtualized_log_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -266,25 +267,54 @@ class WidgetUtils {
       barrierDismissible: false,
       barrierColor: Colors.black.withAlpha(80),
       builder: (BuildContext context) {
-        return AlertDialog(
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(10)),
-          ),
-          backgroundColor: Colors.white.withAlpha(230),
-          shadowColor: Colors.transparent,
-          title: Text(
-            title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontFamily: 'Comfortaa',
-              fontWeight: FontWeight.w700,
-              color: Colors.black,
-            ),
-          ),
-          content: SingleChildScrollView(
-            child: ListBody(children: content),
-          ),
-          actions: actions,
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final padding = MediaQuery.viewInsetsOf(context) + (DialogTheme.of(context).insetPadding ?? const EdgeInsets.symmetric(horizontal: 40, vertical: 24));
+
+            return Center(
+              child: Padding(
+                padding: padding,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: (constraints.maxWidth - padding.horizontal).clamp(0.0, double.infinity),
+                    maxHeight: (constraints.maxHeight - padding.vertical).clamp(0.0, double.infinity),
+                  ),
+                  child: IntrinsicWidth(
+                    child: GlassMorphism(
+                      blur: 30,
+                      opacity: 0.8,
+                      radius: 10,
+                      color: Colors.white,
+                      child: IntrinsicHeight(
+                        child: AlertDialog(
+                          insetPadding: EdgeInsets.zero,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(10)),
+                          ),
+                          backgroundColor: Colors.transparent,
+                          surfaceTintColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          title: Text(
+                            title,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontFamily: 'Comfortaa',
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black,
+                            ),
+                          ),
+                          content: SingleChildScrollView(
+                            child: ListBody(children: content),
+                          ),
+                          actions: actions,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         );
       },
     );
