@@ -1,11 +1,16 @@
 import Cocoa
 import FlutterMacOS
+import macos_window_utils
 
 class MainFlutterWindow: NSWindow {
   override func awakeFromNib() {
     let flutterViewController = FlutterViewController.init()
     let windowFrame = self.frame
-    self.contentViewController = flutterViewController
+    flutterViewController.backgroundColor = .clear
+    self.isOpaque = false
+    self.contentViewController = MacOSWindowUtilsViewController(flutterViewController: flutterViewController)
+    MainFlutterWindowManipulator.start(mainFlutterWindow: self)
+    self.backgroundColor = .clear
     self.setFrame(windowFrame, display: true)
     // Default Size
     self.setContentSize(NSSize(width: 640, height: 480))

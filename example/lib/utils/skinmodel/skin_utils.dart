@@ -12,9 +12,24 @@ import 'package:morpheus_launcher_gui/utils/skinmodel/skin_viewer.dart';
 
 class SkinUtils {
   static Future<Uint8List> loadCroppedSkin() async {
-    final rawSkin = await ThreeDimensionalViewer.getImageBytes(
-      buildSkinModelImageProvider(),
-    );
+    final account = Globals.getAccount();
+    final provider = buildSkinModelImageProvider(account: account);
+    Uint8List rawSkin;
+    if (provider is CachedNetworkImageProvider) {
+      try {
+        final response = await http.get(Uri.parse(provider.url)).timeout(const Duration(seconds: 8));
+        if (response.statusCode != 200) throw StateError('Skin unavailable (${response.statusCode})');
+        rawSkin = response.bodyBytes;
+      } catch (_) {
+        final fallback = await rootBundle.load(account?.isSlimSkin == true ? 'assets/alex-raw.png' : 'assets/steve-raw.png');
+        rawSkin = fallback.buffer.asUint8List(fallback.offsetInBytes, fallback.lengthInBytes);
+      }
+    } else if (provider is AssetImage) {
+      final data = await rootBundle.load(provider.assetName);
+      rawSkin = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+    } else {
+      rawSkin = await ThreeDimensionalViewer.getImageBytes(provider);
+    }
     final img.Image? original = img.decodeImage(rawSkin);
     if (original == null) return rawSkin;
     final cropped = img.copyCrop(original, x: 8, y: 8, width: 8, height: 8);

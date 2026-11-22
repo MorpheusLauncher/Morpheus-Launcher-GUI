@@ -4,7 +4,6 @@ import 'dart:io';
 import 'dart:ui' show ImageFilter;
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +17,7 @@ import 'package:morpheus_launcher_gui/globals.dart';
 import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
 import 'package:morpheus_launcher_gui/main.dart';
 import 'package:morpheus_launcher_gui/utils/circle_utils.dart';
+import 'package:morpheus_launcher_gui/utils/glass_morphism.dart';
 import 'package:morpheus_launcher_gui/utils/launcher//version_utils.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/launch_utils.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/modrinth_utils.dart';
@@ -1582,7 +1582,8 @@ class _MainPageState extends State<MainPage> {
 
                   switch (loaderName) {
                     case 'fabric':
-                      final loaderVer = deps['fabric-loader'] ?? (Globals.fabricLoaderVersionsResponse?.isNotEmpty == true ? Globals.fabricLoaderVersionsResponse[0]['version'].toString() : '');
+                      final loaderVer =
+                          deps['fabric-loader'] ?? (Globals.fabricLoaderVersionsResponse?.isNotEmpty == true ? Globals.fabricLoaderVersionsResponse[0]['version'].toString() : '');
                       gameVersion = loaderVer.isNotEmpty ? 'fabric-loader-$loaderVer-$mcVer' : mcVer;
                       break;
                     case 'forge':
@@ -1896,98 +1897,69 @@ class _MainPageState extends State<MainPage> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 7),
-                    child: Material(
-                      elevation: 15,
-                      color: Colors.transparent,
-                      shadowColor: ColorUtils.defaultShadowColor,
-                      borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
-                      child: MouseRegion(
-                        onEnter: (e) => {},
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton2<String>(
-                            isExpanded: true,
-                            hint: Text(
-                              'Theme',
-                              style: WidgetUtils.customTextStyle(
-                                16,
-                                FontWeight.w500,
-                                ColorUtils.primaryFontColor,
-                              ),
+                    child: Builder(
+                      builder: (context) {
+                        final picker = PopupMenuButton<String>(
+                          position: PopupMenuPosition.under,
+                          offset: const Offset(0, 4),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 140),
+                          color: Colors.transparent,
+                          elevation: 0,
+                          itemBuilder: (context) => [
+                            _ThemePickerMenu(
+                              themes: Globals.WindowThemes,
+                              selected: _themeNotifier.value,
                             ),
-                            items: Globals.WindowThemes.map(
-                              (String item) => DropdownItem<String>(
-                                value: item,
-                                child: Text(
-                                  item,
-                                  style: WidgetUtils.customTextStyle(
-                                    16,
-                                    FontWeight.w500,
-                                    ColorUtils.primaryFontColor,
-                                  ),
-                                ),
-                              ),
-                            ).toList(),
-                            valueListenable: _themeNotifier,
-                            onChanged: (String? value) async {
+                          ],
+                          onSelected: (value) async {
+                            setState(() {
                               _themeNotifier.value = value;
-                              Globals.selectedWindowTheme = value!;
-                              ColorUtils.isMaterial = (Globals.selectedWindowTheme.contains('Material'));
+                              Globals.selectedWindowTheme = value;
+                            });
+                            ColorUtils.isMaterial = value.contains('Material');
+                            if (ColorUtils.isMaterial) Globals.fullTransparent = false;
 
-                              if (ColorUtils.isMaterial) Globals.fullTransparent = false;
-
-                              SharedPreferences prefs = await SharedPreferences.getInstance();
-                              await prefs.setString(
-                                "themeSet",
-                                Globals.selectedWindowTheme,
-                              );
-                              ColorUtils.reloadColors();
-
-                              dynamic effect = getWindowEffect();
-                              Window.setEffect(
-                                effect: effect,
-                                color: ColorUtils.dynamicBackgroundColor,
-                                dark: Globals.darkModeTheme,
-                              );
-                              if (Platform.isMacOS) {
-                                Window.overrideMacOSBrightness(
-                                  dark: Globals.darkModeTheme,
-                                );
-                              }
-                              setState(() => effect = effect);
-                            },
-                            buttonStyleData: ButtonStyleData(
+                            final prefs = await SharedPreferences.getInstance();
+                            await prefs.setString('themeSet', value);
+                            ColorUtils.reloadColors();
+                            Window.setEffect(
+                              effect: getWindowEffect(),
+                              color: ColorUtils.dynamicBackgroundColor,
+                              dark: Globals.darkModeTheme,
+                            );
+                            if (Platform.isMacOS) {
+                              Window.overrideMacOSBrightness(dark: Globals.darkModeTheme);
+                            }
+                            if (mounted) setState(() {});
+                          },
+                          child: SizedBox(
+                            height: 40,
+                            width: 140,
+                            child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 16),
-                              height: 40,
-                              width: 140,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(
-                                  Globals.borderRadius - 4,
-                                ),
-                                color: ColorUtils.dynamicSecondaryForegroundColor,
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      _themeNotifier.value ?? '',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: WidgetUtils.customTextStyle(16, FontWeight.w500, ColorUtils.primaryFontColor),
+                                    ),
+                                  ),
+                                  Icon(Icons.keyboard_arrow_down, size: 20, color: ColorUtils.primaryFontColor),
+                                ],
                               ),
-                            ),
-                            menuItemStyleData: const MenuItemStyleData(),
-                            dropdownStyleData: DropdownStyleData(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(
-                                  Globals.borderRadius - 4,
-                                ),
-                                color: ColorUtils.dynamicPrimaryForegroundColor,
-                              ),
-                              offset: const Offset(0, -4),
-                              elevation: ColorUtils.isMaterial ? 9 : 0,
-                            ),
-                            iconStyleData: IconStyleData(
-                              icon: const Icon(
-                                Icons.arrow_forward_ios,
-                              ),
-                              iconSize: 14,
-                              iconEnabledColor: ColorUtils.primaryFontColor,
-                              iconDisabledColor: Colors.white30,
                             ),
                           ),
-                        ),
-                      ),
+                        );
+                        return Material(
+                          color: ColorUtils.dynamicSecondaryForegroundColor,
+                          borderRadius: BorderRadius.circular(Globals.borderRadius - 4),
+                          clipBehavior: Clip.antiAlias,
+                          child: picker,
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -3332,5 +3304,65 @@ class AccountUtils {
         () => Navigator.pop(context),
       );
     }
+  }
+}
+
+class _ThemePickerMenu extends PopupMenuEntry<String> {
+  const _ThemePickerMenu({required this.themes, required this.selected});
+
+  final List<String> themes;
+  final String? selected;
+
+  @override
+  double get height => themes.length * 44.0 + 8;
+
+  @override
+  bool represents(String? value) => themes.contains(value);
+
+  @override
+  State<_ThemePickerMenu> createState() => _ThemePickerMenuState();
+}
+
+class _ThemePickerMenuState extends State<_ThemePickerMenu> {
+  @override
+  Widget build(BuildContext context) {
+    return GlassMorphism(
+      blur: 20,
+      opacity: ColorUtils.isMaterial ? 0.9 : 0.22,
+      radius: Globals.borderRadius - 4,
+      color: ColorUtils.dynamicSecondaryForegroundColor,
+      child: Material(
+        color: Colors.transparent,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final theme in widget.themes)
+                InkWell(
+                  onTap: () => Navigator.pop(context, theme),
+                  child: SizedBox(
+                    height: 44,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              theme,
+                              style: WidgetUtils.customTextStyle(16, FontWeight.w500, ColorUtils.primaryFontColor),
+                            ),
+                          ),
+                          if (theme == widget.selected) Icon(Icons.check, size: 16, color: ColorUtils.primaryFontColor),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

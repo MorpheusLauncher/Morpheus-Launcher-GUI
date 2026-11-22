@@ -55,7 +55,7 @@ class VisualEffectSubviewContainer extends StatefulWidget {
   /// [VisualEffectSubviewContainerResizeEventRelay] through which its update
   /// behavior can be controlled manually.
   const VisualEffectSubviewContainer({
-    Key? key,
+    super.key,
     required this.child,
     this.alphaValue = 1.0,
     this.cornerRadius,
@@ -64,7 +64,7 @@ class VisualEffectSubviewContainer extends StatefulWidget {
     this.state = MacOSBlurViewState.followsWindowActiveState,
     this.padding = EdgeInsets.zero,
     this.resizeEventRelay,
-  }) : super(key: key);
+  });
 
   @override
   State<VisualEffectSubviewContainer> createState() =>

@@ -150,7 +150,7 @@ class _MinecraftSkinViewerState extends State<MinecraftSkinViewer> with SingleTi
     if (provider is AssetImage) {
       final data = await rootBundle.load(provider.assetName);
       bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
-    } else if (provider is NetworkImage || (provider is CachedNetworkImageProvider && client != null)) {
+    } else if (provider is NetworkImage || provider is CachedNetworkImageProvider) {
       final httpClient = client ?? http.Client();
       try {
         final url = provider is NetworkImage ? provider.url : (provider as CachedNetworkImageProvider).url;
@@ -413,8 +413,8 @@ class _SkinPainter extends CustomPainter {
 
     face([_Point3(x0, y0, z1), _Point3(x1, y0, z1), _Point3(x1, y1, z1), _Point3(x0, y1, z1)], u + (isCape ? 2 * d + w : d), v + d, w, h);
     face([_Point3(x1, y0, z0), _Point3(x0, y0, z0), _Point3(x0, y1, z0), _Point3(x1, y1, z0)], u + (isCape ? d : 2 * d + w), v + d, w, h);
-    face([_Point3(x1, y0, z1), _Point3(x1, y0, z0), _Point3(x1, y1, z0), _Point3(x1, y1, z1)], (mirror || isCape) ? u + d + w : u, v + d, d, h, flipX: isCape);
-    face([_Point3(x0, y0, z0), _Point3(x0, y0, z1), _Point3(x0, y1, z1), _Point3(x0, y1, z0)], (mirror || isCape) ? u : u + d + w, v + d, d, h, flipX: isCape);
+    face([_Point3(x1, y0, z1), _Point3(x1, y0, z0), _Point3(x1, y1, z0), _Point3(x1, y1, z1)], mirror && !isCape ? u : u + d + w, v + d, d, h, flipX: isCape);
+    face([_Point3(x0, y0, z0), _Point3(x0, y0, z1), _Point3(x0, y1, z1), _Point3(x0, y1, z0)], mirror && !isCape ? u + d + w : u, v + d, d, h, flipX: isCape);
     face([_Point3(x0, y0, z0), _Point3(x1, y0, z0), _Point3(x1, y0, z1), _Point3(x0, y0, z1)], u + d, v, w, d, flipX: isCape, flipY: isCape);
     face([_Point3(x0, y1, z1), _Point3(x1, y1, z1), _Point3(x1, y1, z0), _Point3(x0, y1, z0)], u + d + w, v, w, d, flipX: isCape, flipY: !isCape);
   }

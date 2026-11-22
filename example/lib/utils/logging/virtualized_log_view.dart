@@ -35,7 +35,7 @@ Color _colorForLine(String line, List<LogColorRule> rules, Color fallback) {
   final lower = line.toLowerCase();
   for (final rule in rules) {
     final keyword = rule.caseSensitive ? rule.keyword : rule.keyword.toLowerCase();
-    if (lower.contains(keyword)) return rule.color;
+    if ((rule.caseSensitive ? line : lower).contains(keyword)) return rule.color;
   }
 
   return fallback;

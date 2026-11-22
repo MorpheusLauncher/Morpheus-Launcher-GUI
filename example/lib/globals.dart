@@ -162,6 +162,12 @@ class ColorUtils {
   static Color get dynamicBackgroundColor => isMaterial ? dynamicMaterialColor : dynamicAcrylicColor;
 
   static Color get dynamicWindowBackgroundColor {
+    // macOS needs an opaque Flutter background for Material: its native
+    // window material otherwise shows through instead of the selected color.
+    if (Platform.isMacOS && isMaterial) {
+      return dynamicMaterialColor;
+    }
+
     if (Platform.isMacOS || (Platform.isLinux && Globals.fullTransparent)) {
       return Colors.transparent;
     }
@@ -194,10 +200,15 @@ class ColorUtils {
   static Color get secondaryFontColor => primaryFontColor.withAlpha(160);
 
   static reloadColors() {
+    final accentHct = Hct.fromInt(dynamicAccentColor.toARGB32());
+    // Neutral accents have no meaningful hue. Increasing their chroma would
+    // introduce an arbitrary color instead of keeping the palette gray.
+    final neutralAccent = accentHct.chroma < 5;
+
     // Background material you
     dynamicBackgroundMaterialHct = Hct.fromInt(dynamicAccentColor.value);
     dynamicBackgroundMaterialHct.tone = 15;
-    dynamicBackgroundMaterialHct.chroma = 18;
+    dynamicBackgroundMaterialHct.chroma = neutralAccent ? accentHct.chroma : 18;
     // Foreground material you
     dynamicPrimaryMaterialHct = Hct.fromInt(dynamicAccentColor.value);
     dynamicSecondaryMaterialHct = Hct.fromInt(dynamicAccentColor.value);
@@ -206,16 +217,16 @@ class ColorUtils {
     if (Globals.darkModeTheme) {
       // Primario (contenitori)
       dynamicPrimaryMaterialHct.tone = 25;
-      dynamicPrimaryMaterialHct.chroma = 18;
+      dynamicPrimaryMaterialHct.chroma = neutralAccent ? accentHct.chroma : 18;
       // Secondario (bottoni, etc.)
       dynamicSecondaryMaterialHct.tone = 40;
-      dynamicSecondaryMaterialHct.chroma = 25;
+      dynamicSecondaryMaterialHct.chroma = neutralAccent ? accentHct.chroma : 25;
     } else {
       // Primario (contenitori)
       dynamicPrimaryMaterialHct.tone = 100;
       // Secondario (bottoni, etc.)
       dynamicSecondaryMaterialHct.tone = 90;
-      dynamicSecondaryMaterialHct.chroma = 15;
+      dynamicSecondaryMaterialHct.chroma = neutralAccent ? accentHct.chroma : 15;
     }
     // Terziario (font)
     dynamicTertiaryMaterialHct.tone = 10;
@@ -304,13 +315,14 @@ class LauncherUtils {
   }
 
   /** Sets the java required by the version, downloading it if missing */
-  static Future<dynamic> JavaAutoInstall(String gameVersion) async {
+  static Future<dynamic> JavaAutoInstall(String gameVersion, {Directory? runtimeRoot}) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? javaExecutable;
 
     final requiredJavaVersion = await _getRequiredJavaVersion(gameVersion);
     if (requiredJavaVersion != null) {
-      final runtimeDir = "${LauncherUtils.getApplicationFolder("morpheus")}/runtime/jre-$requiredJavaVersion";
+      final root = runtimeRoot?.path ?? "${LauncherUtils.getApplicationFolder("morpheus")}/runtime";
+      final runtimeDir = "$root/jre-$requiredJavaVersion";
       javaExecutable = _findJavaExecutable(runtimeDir);
 
       if (javaExecutable == null && Globals.isOnline) {

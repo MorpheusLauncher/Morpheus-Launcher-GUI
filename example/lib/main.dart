@@ -30,6 +30,7 @@ Future<void> main() async {
     Globals.WindowThemes.add('Material');
   } else if (Platform.isMacOS) {
     Globals.WindowThemes.add('Acrylic'); // Acrylic for macos
+    Globals.WindowThemes.add('Material');
   }
 
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,6 +52,7 @@ Future<void> main() async {
     await Window.hideTitle();
     await Window.makeTitlebarTransparent();
     await Window.enableFullSizeContentView();
+    await Window.setWindowBackgroundColorToClear();
   }
 
   runApp(MyApp());

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_acrylic/macos/converters/blur_view_state_to_visual_effect_view_state_converter.dart';
 import 'package:flutter_acrylic/macos/converters/mac_toolbar_style_to_window_toolbar_style_converter.dart';
@@ -92,7 +91,7 @@ class Window {
   ///
   static Future<void> setEffect({
     required WindowEffect effect,
-    Color color = Colors.transparent,
+    Color color = const Color(0x00000000),
     bool dark = true,
   }) async {
     if (Platform.isMacOS) {
@@ -108,10 +107,10 @@ class Window {
       {
         'effect': effect.index,
         'color': {
-          'R': color.red,
-          'G': color.green,
-          'B': color.blue,
-          'A': color.alpha,
+          'R': (color.r * 255).round().clamp(0, 255),
+          'G': (color.g * 255).round().clamp(0, 255),
+          'B': (color.b * 255).round().clamp(0, 255),
+          'A': (color.a * 255).round().clamp(0, 255),
         },
         'dark': dark,
       },
