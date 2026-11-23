@@ -79,6 +79,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get modded_modrinth_button => 'Modpacks en Modrinth';
 
   @override
+  String get modded_ftb_button => 'Modpacks en FTB';
+
+  @override
+  String get modded_ftb_title => 'Modpacks de FTB';
+
+  @override
+  String get modpack_versions => 'Versiones';
+
+  @override
+  String get modpack_ftb_install_unavailable =>
+      'La instalación de FTB aún no está disponible.';
+
+  @override
+  String modpack_search_minimum_characters(int count) {
+    return 'Introduce al menos $count caracteres';
+  }
+
+  @override
   String get modded_modrinth_title => 'Modpacks de Modrinth';
 
   @override
@@ -109,6 +127,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get modpack_download_button => 'Descargar';
+
+  @override
+  String get modpack_incompatible =>
+      'Versión de Minecraft o modloader no compatible';
 
   @override
   String get modpack_description_title => 'Descripción';
@@ -196,6 +218,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settings_misc_label => 'Varios';
+
+  @override
+  String get settings_modpack_downloads => 'Descargas simultáneas por modpack';
 
   @override
   String get settings_console_switch =>

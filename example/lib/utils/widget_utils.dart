@@ -11,6 +11,7 @@ import 'package:morpheus_launcher_gui/utils/glass_morphism.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/version_utils.dart';
 import 'package:morpheus_launcher_gui/utils/logging/virtualized_log_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:text_divider/text_divider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class CustomSettingSwitchStyle {
@@ -33,7 +34,163 @@ class CustomSettingSwitchStyle {
   });
 }
 
+/// Picker condiviso per le impostazioni, con menu scorrevole per liste lunghe.
+class SettingPicker<T> extends StatelessWidget {
+  const SettingPicker({super.key, required this.values, required this.selected, required this.label, required this.onSelected});
+
+  final List<T> values;
+  final T? selected;
+  final String Function(T) label;
+  final ValueChanged<T> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final height = (values.length * 44.0 + 8).clamp(0.0, 280.0);
+    final textStyle = WidgetUtils.customTextStyle(16, FontWeight.w500, ColorUtils.primaryFontColor);
+    final painter = TextPainter(textDirection: Directionality.of(context), textScaler: MediaQuery.textScalerOf(context), maxLines: 1);
+    var widest = 0.0;
+    for (final value in values) {
+      painter.text = TextSpan(text: label(value), style: textStyle);
+      painter.layout();
+      if (painter.width > widest) widest = painter.width;
+    }
+    painter.dispose();
+    // Leave room for padding and the arrow/checkmark, even for short values.
+    final width = (widest + 56).clamp(72.0, MediaQuery.sizeOf(context).width * .5);
+
+    return Material(
+      color: ColorUtils.dynamicSecondaryForegroundColor,
+      borderRadius: BorderRadius.circular(Globals.borderRadius - 4),
+      clipBehavior: Clip.antiAlias,
+      child: PopupMenuButton<T>(
+        position: PopupMenuPosition.under,
+        offset: const Offset(0, 4),
+        padding: EdgeInsets.zero,
+        constraints: BoxConstraints(minWidth: width),
+        color: Colors.transparent,
+        elevation: 0,
+        onSelected: onSelected,
+        itemBuilder: (_) => [_SettingPickerMenu<T>(values: values, selected: selected, label: label, menuHeight: height, width: width)],
+        child: SizedBox(
+          height: 40,
+          width: width,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(children: [
+              Expanded(
+                child: Text(
+                  selected == null ? '' : label(selected as T),
+                  overflow: TextOverflow.ellipsis,
+                  style: WidgetUtils.customTextStyle(16, FontWeight.w500, ColorUtils.primaryFontColor),
+                ),
+              ),
+              Icon(Icons.keyboard_arrow_down, size: 20, color: ColorUtils.primaryFontColor),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingPickerMenu<T> extends PopupMenuEntry<T> {
+  const _SettingPickerMenu({required this.values, required this.selected, required this.label, required this.menuHeight, required this.width});
+
+  final List<T> values;
+  final T? selected;
+  final String Function(T) label;
+  final double menuHeight;
+  final double width;
+
+  @override
+  double get height => menuHeight;
+
+  @override
+  bool represents(T? value) => values.contains(value);
+
+  @override
+  State<_SettingPickerMenu<T>> createState() => _SettingPickerMenuState<T>();
+}
+
+class _SettingPickerMenuState<T> extends State<_SettingPickerMenu<T>> {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: widget.width,
+      height: widget.menuHeight,
+      child: GlassMorphism(
+        blur: 20,
+        opacity: ColorUtils.isMaterial ? 0.9 : 0.22,
+        radius: Globals.borderRadius - 4,
+        color: ColorUtils.dynamicSecondaryForegroundColor,
+        child: Material(
+          color: Colors.transparent,
+          child: SizedBox(
+            height: widget.menuHeight,
+            child: ListView(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              shrinkWrap: true,
+              children: [
+                for (final value in widget.values)
+                  InkWell(
+                    onTap: () => Navigator.pop(context, value),
+                    child: SizedBox(
+                      height: 44,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(children: [
+                          Expanded(child: Text(widget.label(value), style: WidgetUtils.customTextStyle(16, FontWeight.w500, ColorUtils.primaryFontColor))),
+                          if (value == widget.selected) Icon(Icons.check, size: 16, color: ColorUtils.primaryFontColor),
+                        ]),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class WidgetUtils {
+  static Widget sectionDivider(String label) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5),
+        child: TextDivider(
+          color: ColorUtils.secondaryFontColor.withAlpha(80),
+          thickness: 2,
+          text: Text(label, textAlign: TextAlign.center, style: customTextStyle(20, FontWeight.w300, ColorUtils.primaryFontColor)),
+        ),
+      );
+
+  static Widget settingRow({required IconData icon, required String title, required Widget control}) => buildSettingContainerItem(SizedBox(
+        height: 55,
+        child: Row(children: [
+          SizedBox(width: 45, child: Icon(icon, size: 26, color: ColorUtils.primaryFontColor)),
+          Expanded(child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: customTextStyle(16, FontWeight.w500, ColorUtils.primaryFontColor))),
+          Padding(padding: const EdgeInsets.all(7), child: control),
+        ]),
+      ));
+
+  static Widget responsiveTileGrid(
+    List<Widget> children, {
+    double minTileWidth = 340,
+    double spacing = 8,
+    double runSpacing = 0,
+    int maxColumns = 4,
+  }) {
+    if (children.isEmpty) return const SizedBox.shrink();
+
+    return LayoutBuilder(builder: (context, constraints) {
+      final width = constraints.hasBoundedWidth ? constraints.maxWidth : MediaQuery.of(context).size.width;
+      final columns = responsiveColumnCount(width, minTileWidth: minTileWidth, spacing: spacing, maxColumns: maxColumns);
+      final tileWidth = (width - spacing * (columns - 1)) / columns;
+
+      return Wrap(spacing: spacing, runSpacing: runSpacing, children: [for (final child in children) SizedBox(width: tileWidth, child: child)]);
+    });
+  }
+
   /// Numero di colonne per una griglia responsive larga [width], dati una
   /// larghezza minima di tile [minTileWidth] e uno spacing tra tile
   /// [spacing]. Usata da tutte le griglie del launcher (home, morpheus,

@@ -6,6 +6,7 @@ import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:morpheus_launcher_gui/globals.dart';
 import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/news_utils.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/parallel_downloads.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/version_utils.dart';
 import 'package:morpheus_launcher_gui/utils/widget_utils.dart';
 import 'package:morpheus_launcher_gui/views/main_page.dart';
@@ -96,6 +97,7 @@ class MyAppBodyState extends State<MyAppBody> {
 
     // legge i setting se esistono, in alternativa usa valori predefiniti
     Globals.showOnlyReleases = prefs.getBool('showOnlyReleases') ?? true;
+    ModpackDownloadSettings.load(prefs);
     Globals.darkModeTheme = prefs.getBool('darkModeTheme') ?? false;
     Globals.accentColor = prefs.getInt('accentColor') ?? 0;
     Globals.javaramcontroller.text = prefs.getString('javaRAM') ?? "1024";

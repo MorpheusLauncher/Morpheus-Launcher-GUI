@@ -6,16 +6,20 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:morpheus_launcher_gui/globals.dart';
 import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/ftb_utils.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/launch_utils.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/modpack_detail_source.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/modpack_installations.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/modrinth_utils.dart';
 import 'package:morpheus_launcher_gui/utils/widget_utils.dart';
 
-import '../utils/markdown/flutter_markdown_plus.dart';
+import '../../../utils/markdown/flutter_markdown_plus.dart';
 
 class ModpackDetailView extends StatefulWidget {
-  final dynamic modpack;
+  final Map<String, dynamic> modpack;
+  final ModpackDetailSource source;
 
-  const ModpackDetailView({super.key, required this.modpack});
+  const ModpackDetailView({super.key, required this.modpack, required this.source});
 
   @override
   State<ModpackDetailView> createState() => _ModpackDetailViewState();
@@ -28,6 +32,8 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
   dynamic _latestVersion;
   List<dynamic> _dependencies = [];
   Map<String, dynamic> _modDetails = {};
+  List<ModpackVersion> _versions = [];
+  String? _selectedVersionId;
 
   // ── Real total download size (.mrpack + every mod it lists) ───
   bool _isLoadingSize = false;
@@ -35,46 +41,79 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
 
   // ── Install state ──────────────────────────────
   bool _isInstalled = false;
-  bool _isInstalling = false;
-  double _installProgress = 0.0;
-  String _installStatus = '';
+
+  String get _installKey => '${widget.source is FtbDetailSource ? 'ftb' : 'modrinth'}:${widget.source is FtbDetailSource ? widget.modpack['project_id'] : widget.modpack['slug']}';
+
+  ModpackInstallation? get _task => ModpackInstallations.instance[_installKey];
+
+  bool get _isInstalling => _task != null && _task!.error == null;
+
+  double get _installProgress => _task?.progress ?? 0;
+
+  String get _installStatus => _task?.status ?? '';
 
   @override
   void initState() {
     super.initState();
+    ModpackInstallations.instance.addListener(_installationChanged);
     _fetchDetails();
     _checkInstalled();
   }
 
+  @override
+  void dispose() {
+    ModpackInstallations.instance.removeListener(_installationChanged);
+    super.dispose();
+  }
+
+  void _installationChanged() {
+    if (!mounted) return;
+    if (_task == null) {
+      _checkInstalled();
+    } else {
+      setState(() {});
+    }
+  }
+
   void _checkInstalled() {
+    if (!widget.source.supportsInstallation) return;
+    if (widget.source is FtbDetailSource) {
+      final id = widget.modpack['project_id']?.toString() ?? '';
+      if (RegExp(r'^[0-9]+$').hasMatch(id)) setState(() => _isInstalled = FtbUtils.instanceExists(id));
+      return;
+    }
     final slug = widget.modpack["slug"]?.toString() ?? '';
     if (slug.isNotEmpty) {
-      setState(() => _isInstalled = ModrinthUtils.instanceExists(slug));
+      setState(() => _isInstalled = ModrinthUtils.getIndexEntry(slug) != null);
     }
   }
 
   Future<void> _fetchDetails() async {
-    final projectId = widget.modpack["project_id"];
     try {
-      final projectRes = await http.get(Uri.parse("${Urls.modrinthApiURL}/project/$projectId"));
-      final versionsRes = await http.get(Uri.parse("${Urls.modrinthApiURL}/project/$projectId/version"));
-
-      if (projectRes.statusCode == 200 && versionsRes.statusCode == 200) {
-        _projectData = json.decode(utf8.decode(projectRes.bodyBytes));
-        final versions = json.decode(utf8.decode(versionsRes.bodyBytes)) as List;
-        if (versions.isNotEmpty) {
-          _latestVersion = versions.first;
-          _dependencies = _latestVersion["dependencies"] ?? [];
-        }
-      }
+      final details = await widget.source.load(widget.modpack);
+      _projectData = {
+        'body': details.description,
+        'game_versions': details.gameVersions,
+        'loaders': details.loaders,
+        'server_side': details.supportsServer == null
+            ? null
+            : details.supportsServer!
+                ? 'required'
+                : 'optional',
+      };
+      _latestVersion = details.latestVersion;
+      _dependencies = details.dependencies;
+      _versions = details.versions;
+      final available = _versions.where((version) => version.compatible);
+      _selectedVersionId = available.isEmpty ? null : available.first.id;
     } catch (e) {
       debugPrint("Error fetching modpack details: $e");
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
 
-    if (_dependencies.isNotEmpty) _fetchModDetails();
-    if (_latestVersion != null) _computeRealSize();
+    if (widget.source is ModrinthDetailSource && _dependencies.isNotEmpty) _fetchModDetails();
+    if (widget.source is ModrinthDetailSource && _latestVersion != null) _computeRealSize();
   }
 
   /// The Modrinth API only reports the size of the primary file, which for
@@ -152,28 +191,34 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
     final title = widget.modpack["title"]?.toString() ?? slug;
     final iconUrl = widget.modpack["icon_url"]?.toString() ?? '';
 
-    if (projectId.isEmpty || slug.isEmpty) return;
-
-    setState(() {
-      _isInstalling = true;
-      _installProgress = 0.0;
-      _installStatus = '';
-    });
+    if (projectId.isEmpty || (slug.isEmpty && widget.source is! FtbDetailSource) || _selectedVersionId == null) return;
+    final selectedVersionId = _selectedVersionId!;
 
     try {
-      await ModrinthUtils.installModpack(
-        projectId: projectId,
-        slug: slug,
+      await ModpackInstallations.instance.start(
+        key: _installKey,
+        provider: widget.source is FtbDetailSource ? 'ftb' : 'modrinth',
         title: title,
         iconUrl: iconUrl,
-        onProgress: (p) {
-          if (mounted) setState(() => _installProgress = p);
-        },
-        onStatus: (s) {
-          if (mounted) setState(() => _installStatus = s);
+        install: (onProgress, onStatus, cancellation) {
+          if (widget.source is FtbDetailSource) {
+            return FtbUtils.install(pack: widget.modpack, selectedVersionId: selectedVersionId, onProgress: onProgress, onStatus: onStatus, cancellation: cancellation);
+          }
+          return ModrinthUtils.installModpack(
+            projectId: projectId,
+            slug: slug,
+            title: title,
+            iconUrl: iconUrl,
+            selectedVersionId: selectedVersionId,
+            onProgress: onProgress,
+            onStatus: onStatus,
+            cancellation: cancellation,
+          );
         },
       );
       if (mounted) setState(() => _isInstalled = true);
+    } on InstallationCancelled {
+      // Cancellation is requested from the installations list.
     } catch (e) {
       debugPrint("Install error: $e");
       if (mounted) {
@@ -184,13 +229,11 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
           () => Navigator.pop(context),
         );
       }
-    } finally {
-      if (mounted) setState(() => _isInstalling = false);
     }
   }
 
   void _uninstall() {
-    final slug = widget.modpack["slug"]?.toString() ?? '';
+    final slug = (widget.source is FtbDetailSource ? widget.modpack['project_id'] : widget.modpack['slug'])?.toString() ?? '';
     final title = widget.modpack["title"]?.toString() ?? slug;
 
     WidgetUtils.showPopup(
@@ -222,7 +265,11 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
         TextButton(
           onPressed: () async {
             Navigator.pop(context);
-            await ModrinthUtils.removeInstance(slug);
+            if (widget.source is FtbDetailSource) {
+              await FtbUtils.removeInstance(slug);
+            } else {
+              await ModrinthUtils.removeInstance(slug);
+            }
             if (mounted) setState(() => _isInstalled = false);
           },
           child: Text(
@@ -240,11 +287,12 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
   }
 
   Future<void> _launch() async {
-    final slug = widget.modpack["slug"]?.toString() ?? '';
+    final isFtb = widget.source is FtbDetailSource;
+    final slug = (isFtb ? widget.modpack['project_id'] : widget.modpack['slug'])?.toString() ?? '';
     if (slug.isEmpty || !_isInstalled) return;
 
-    final dependencies = ModrinthUtils.getDependencies(slug);
-    final indexEntry = ModrinthUtils.getIndexEntry(slug);
+    final indexEntry = isFtb ? FtbUtils.readMeta(slug) : ModrinthUtils.getIndexEntry(slug);
+    final dependencies = isFtb ? Map<String, String>.from(indexEntry?['dependencies'] as Map? ?? {}) : ModrinthUtils.getDependencies(slug);
     final minecraftVersion = dependencies['minecraft'] ?? indexEntry?['minecraft']?.toString() ?? '';
     final loader = indexEntry?['loader']?.toString() ?? '';
 
@@ -289,7 +337,7 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
     await LaunchUtils.launchMinecraft(
       context,
       config,
-      gameDirectory: ModrinthUtils.gameDir(slug),
+      gameDirectory: isFtb ? FtbUtils.instanceDir(slug) : ModrinthUtils.gameDir(slug),
       onAccountRequired: () {
         Globals.navSelected = NavSection.accounts;
         Navigator.of(context).popUntil((route) => route.isFirst);
@@ -369,6 +417,10 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
           _buildActions(),
           const SizedBox(height: 24),
           _buildCompatibilityInfo(),
+          if (_versions.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            _buildVersions(),
+          ],
           if ((_projectData?["body"] ?? '').toString().trim().isNotEmpty) ...[
             const SizedBox(height: 24),
             _buildDescription(),
@@ -561,17 +613,17 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
                 children: loaders.map((loader) => _buildTag(loader, accent: true)).toList(),
               ),
             ],
-            const SizedBox(height: 14),
-            Text(
-              AppLocalizations.of(context)!.modpack_supported_environments,
-              style: WidgetUtils.customTextStyle(13, FontWeight.w400, ColorUtils.secondaryFontColor),
-            ),
-            const SizedBox(height: 8),
-            _buildTag(
-              _projectData?["server_side"] == "required"
-                  ? AppLocalizations.of(context)!.modpack_client_server
-                  : AppLocalizations.of(context)!.modpack_client_side,
-            ),
+            if (_projectData?["server_side"] != null) ...[
+              const SizedBox(height: 14),
+              Text(
+                AppLocalizations.of(context)!.modpack_supported_environments,
+                style: WidgetUtils.customTextStyle(13, FontWeight.w400, ColorUtils.secondaryFontColor),
+              ),
+              const SizedBox(height: 8),
+              _buildTag(
+                _projectData?["server_side"] == "required" ? AppLocalizations.of(context)!.modpack_client_server : AppLocalizations.of(context)!.modpack_client_side,
+              ),
+            ],
           ],
         ),
         if (categories.isNotEmpty) ...[
@@ -598,11 +650,64 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
         _buildStats(),
         const SizedBox(height: 16),
         _buildCompatibilityInfo(),
+        if (_versions.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          _buildVersions(),
+        ],
         if (_dependencies.isNotEmpty) ...[
           const SizedBox(height: 16),
           _buildModList(),
         ],
       ],
+    );
+  }
+
+  Widget _buildVersions() {
+    return _buildCard(
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        title: Text(
+          AppLocalizations.of(context)!.modpack_versions,
+          style: WidgetUtils.customTextStyle(17, FontWeight.bold, ColorUtils.primaryFontColor),
+        ),
+        subtitle: Text(
+          '${_versions.firstWhere((version) => version.id == _selectedVersionId, orElse: () => _versions.first).label} · ${_versions.length}',
+          style: WidgetUtils.customTextStyle(13, FontWeight.w400, ColorUtils.secondaryFontColor),
+        ),
+        iconColor: ColorUtils.primaryFontColor,
+        collapsedIconColor: ColorUtils.secondaryFontColor,
+        children: [
+          SizedBox(
+            height: (_versions.length * 44.0).clamp(0.0, 264.0),
+            child: ListView.builder(
+              padding: const EdgeInsets.only(bottom: 8),
+              itemCount: _versions.length,
+              itemExtent: 44,
+              itemBuilder: (context, index) {
+                final version = _versions[index];
+                return Tooltip(
+                  message: version.compatible ? '' : AppLocalizations.of(context)!.modpack_incompatible,
+                  child: InkWell(
+                    onTap: _isInstalling || _isInstalled || !version.compatible ? null : () => setState(() => _selectedVersionId = version.id),
+                    child: Opacity(
+                      opacity: version.compatible ? 1 : .4,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(children: [
+                          Expanded(
+                              child: Text(version.label,
+                                  maxLines: 1, overflow: TextOverflow.ellipsis, style: WidgetUtils.customTextStyle(14, FontWeight.w400, ColorUtils.primaryFontColor))),
+                          if (version.id == _selectedVersionId) Icon(Icons.check, size: 18, color: ColorUtils.dynamicAccentColor),
+                        ]),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -817,6 +922,12 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
 
   /// Three states: installing (progress bar) → installed (Remove) → not installed (Download).
   Widget _buildDownloadButton({bool compact = false}) {
+    if (!widget.source.supportsInstallation) {
+      return Text(
+        AppLocalizations.of(context)!.modpack_ftb_install_unavailable,
+        style: WidgetUtils.customTextStyle(13, FontWeight.w400, ColorUtils.secondaryFontColor),
+      );
+    }
     // ── Installing ─────────────────────────────────────────────────────────
     if (_isInstalling) {
       return _buildCard(
@@ -914,10 +1025,14 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
       width: double.infinity,
       height: 55,
       child: ElevatedButton.icon(
-        onPressed: _install,
+        onPressed: _selectedVersionId == null ? null : _install,
         icon: const Icon(Icons.download, size: 22, color: Colors.white),
         label: Text(
-          AppLocalizations.of(context)!.modpack_download_button,
+          _selectedVersionId == null
+              ? AppLocalizations.of(context)!.modpack_download_button
+              : '${AppLocalizations.of(context)!.modpack_download_button} ${_versions.firstWhere((version) => version.id == _selectedVersionId).label}',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: WidgetUtils.customTextStyle(16, FontWeight.bold, Colors.white),
         ),
         style: ElevatedButton.styleFrom(

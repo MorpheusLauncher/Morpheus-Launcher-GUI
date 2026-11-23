@@ -105,6 +105,7 @@ class Urls {
   static const optifineVersionsURL = "$morpheusBaseURL/downloads/optifine.json";
   static const morpheusProductsURL = "$morpheusBaseURL/downloads/morpheus-lite/index.json";
   static const modrinthApiURL = "https://api.modrinth.com/v2";
+  static const ftbApiURL = "https://api.feed-the-beast.com/v1/modpacks/public";
 
   // Roba inerente a ElyBy
   static const elybyBaseURL = "https://account.ely.by";

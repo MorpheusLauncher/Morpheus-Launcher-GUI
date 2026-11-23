@@ -44,8 +44,7 @@ class NewsUtils {
     // usa la releaseTime del manifest versioni Mojang (stesso id di versione).
     final releaseTimes = await _manifestReleaseTimes();
     final epoch = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
-    DateTime dateOf(Map<String, dynamic> entry) =>
-        DateTime.tryParse(entry["date"]?.toString() ?? "") ?? releaseTimes[entry["version"]?.toString()] ?? epoch;
+    DateTime dateOf(Map<String, dynamic> entry) => DateTime.tryParse(entry["date"]?.toString() ?? "") ?? releaseTimes[entry["version"]?.toString()] ?? epoch;
 
     // Il sort di Dart non è stabile: l'indice originale fa da spareggio così
     // le entry senza alcuna data mantengono l'ordine del feed.

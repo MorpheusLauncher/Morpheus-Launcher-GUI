@@ -27,6 +27,16 @@
   "modded_installed_title": "Installed",
   "modded_available_versions_title": "Modded versions available",
   "modded_modrinth_button": "Modpacks on Modrinth",
+  "modded_ftb_button": "Modpacks on FTB",
+  "modded_ftb_title": "FTB Modpacks",
+  "modpack_versions": "Versions",
+  "modpack_ftb_install_unavailable": "FTB installation is not available yet.",
+  "modpack_search_minimum_characters": "Enter at least {count} characters",
+  "@modpack_search_minimum_characters": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
   "modded_modrinth_title": "Modrinth Modpacks",
   "modded_modrinth_search": "Search modpacks...",
   "modded_modrinth_section_title": "Modpacks",
@@ -43,6 +53,7 @@
   "modpack_stats_updated": "Updated",
   "modpack_stats_size": "Size",
   "modpack_download_button": "Download",
+  "modpack_incompatible": "Unsupported Minecraft version or modloader",
   "modpack_description_title": "Description",
   "modpack_mod_list_title": "Mod List",
   "modpack_unknown_author": "Unknown author",
@@ -72,6 +83,7 @@
   "settings_appearance_label": "Appearance",
   "settings_theme": "Launcher theme",
   "settings_misc_label": "Miscellaneous",
+  "settings_modpack_downloads": "Simultaneous downloads per modpack",
   "settings_console_switch": "Show console on game start",
   "settings_custom_folder_title": "Custom game folder",
   "settings_custom_folder": "Game directory",

@@ -119,7 +119,11 @@ class VersionUtils {
         var parts = value.last.split('-');
         if (parts.length >= 2) {
           int idx = keys.indexOf(key);
-          if (idx >= keys.indexOf("1.6.4") && idx != keys.indexOf("1.7.10_pre4") && idx != keys.indexOf("1.18") && idx != keys.indexOf("1.19") && (idx < keys.indexOf("1.13.2") || idx > keys.indexOf("1.16.5"))) {
+          if (idx >= keys.indexOf("1.6.4") &&
+              idx != keys.indexOf("1.7.10_pre4") &&
+              idx != keys.indexOf("1.18") &&
+              idx != keys.indexOf("1.19") &&
+              (idx < keys.indexOf("1.13.2") || idx > keys.indexOf("1.16.5"))) {
             resultList.add("${parts[0]}-forge-${parts[1]}");
           }
         }
@@ -460,7 +464,10 @@ class VersionUtils {
     return _checkCompatibilityWithReason(normalized.gameType, normalized.gameVer).reason;
   }
 
-  static ({bool isCompatible, String? reason}) _checkCompatibilityWithReason(String loaderType, String version) {
+  static bool isModpackCompatible(String loaderType, String version) =>
+      _checkCompatibilityWithReason(loaderType.toLowerCase(), version, forceClasspath: true).isCompatible;
+
+  static ({bool isCompatible, String? reason}) _checkCompatibilityWithReason(String loaderType, String version, {bool forceClasspath = false}) {
     try {
       final loaderConfig = Globals.incompatibleJson[loaderType];
       if (loaderConfig == null) return (isCompatible: true, reason: null);
@@ -472,7 +479,7 @@ class VersionUtils {
       // loader/version, so compatibility checks never disagree with what
       // happens when the user actually launches.
       final loader = LaunchPolicy.detectLoaderFromType(loaderType);
-      final useClasspath = LaunchPolicy.resolveEnableClassPathFor(loader, version);
+      final useClasspath = forceClasspath || LaunchPolicy.resolveEnableClassPathFor(loader, version);
       final rangesToCheck = loaderConfig[useClasspath ? 'classpath' : 'classloader']?['ranges'] as List? ?? [];
 
       for (var range in rangesToCheck) {

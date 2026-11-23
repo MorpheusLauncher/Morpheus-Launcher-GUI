@@ -118,6 +118,7 @@ flutter:
     - assets/forge.png
     - assets/fabric.png
     - assets/modrinth.png
+    - assets/feedthebeast.jpg
 
   fonts:
     - family: MorpheusIcons

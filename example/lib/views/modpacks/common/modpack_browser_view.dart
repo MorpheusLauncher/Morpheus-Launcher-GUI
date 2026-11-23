@@ -1,22 +1,31 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:morpheus_launcher_gui/globals.dart';
 import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
+import 'package:morpheus_launcher_gui/utils/glass_morphism.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/ftb_compatibility.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/modpack_browser_source.dart';
 import 'package:morpheus_launcher_gui/utils/widget_utils.dart';
-import 'package:morpheus_launcher_gui/views/modpack_detail_view.dart';
 
-class ModrinthView extends StatefulWidget {
-  const ModrinthView({super.key});
+class ModpackBrowserView extends StatefulWidget {
+  final ModpackBrowserSource source;
+  final String title;
+  final Widget Function(BuildContext context, Map<String, dynamic> pack) detailBuilder;
+
+  const ModpackBrowserView({
+    super.key,
+    required this.source,
+    required this.title,
+    required this.detailBuilder,
+  });
 
   @override
-  State<ModrinthView> createState() => _ModrinthViewState();
+  State<ModpackBrowserView> createState() => _ModpackBrowserViewState();
 }
 
-class _ModrinthViewState extends State<ModrinthView> {
+class _ModpackBrowserViewState extends State<ModpackBrowserView> {
   static const int _pageSize = 50;
 
   final TextEditingController _searchController = TextEditingController();
@@ -26,6 +35,7 @@ class _ModrinthViewState extends State<ModrinthView> {
   int _totalHits = 0;
   int _searchRequestId = 0;
   Timer? _debounce;
+  bool _hasError = false;
 
   @override
   void initState() {
@@ -61,35 +71,16 @@ class _ModrinthViewState extends State<ModrinthView> {
     });
 
     try {
-      final uri = Uri.parse("${Urls.modrinthApiURL}/search").replace(
-        queryParameters: {
-          "query": query.trim(),
-          "facets": '[["project_type:modpack"]]',
-          "limit": _pageSize.toString(),
-          "offset": (normalizedPage * _pageSize).toString(),
-        },
-      );
-      final response = await http.get(uri);
+      final result = await widget.source.search(query.trim(), limit: _pageSize, offset: normalizedPage * _pageSize);
 
       if (!mounted || requestId != _searchRequestId) return;
 
-      if (response.statusCode == 200) {
-        final data = json.decode(utf8.decode(response.bodyBytes));
-        final hits = data["hits"] is List ? data["hits"] as List : <dynamic>[];
-        final totalHits = data["total_hits"] is int ? data["total_hits"] as int : hits.length;
-
-        setState(() {
-          _modpacks = hits;
-          _totalHits = totalHits;
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _modpacks = [];
-          _totalHits = 0;
-          _isLoading = false;
-        });
-      }
+      setState(() {
+        _modpacks = result.packs;
+        _totalHits = result.total;
+        _isLoading = false;
+        _hasError = false;
+      });
     } catch (e) {
       if (!mounted || requestId != _searchRequestId) return;
 
@@ -97,6 +88,7 @@ class _ModrinthViewState extends State<ModrinthView> {
         _modpacks = [];
         _totalHits = 0;
         _isLoading = false;
+        _hasError = true;
       });
     }
   }
@@ -109,6 +101,7 @@ class _ModrinthViewState extends State<ModrinthView> {
 
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
+    ++_searchRequestId;
     _debounce = Timer(const Duration(milliseconds: 500), () {
       _searchModpacks(query, page: 0);
     });
@@ -143,7 +136,7 @@ class _ModrinthViewState extends State<ModrinthView> {
           ),
           const SizedBox(width: 12),
           Text(
-            AppLocalizations.of(context)!.modded_modrinth_title,
+            widget.title,
             style: WidgetUtils.customTextStyle(24, FontWeight.w600, ColorUtils.primaryFontColor),
           ),
         ],
@@ -248,6 +241,23 @@ class _ModrinthViewState extends State<ModrinthView> {
   }
 
   Widget _buildModpackList() {
+    if (_hasError) {
+      return Center(
+        child: TextButton(
+          onPressed: () => _searchModpacks(_searchController.text, page: _page),
+          child: Text(AppLocalizations.of(context)!.generic_error_msg),
+        ),
+      );
+    }
+    final query = _searchController.text.trim();
+    if (query.isNotEmpty && query.runes.length < widget.source.minimumQueryLength) {
+      return Center(
+        child: Text(
+          AppLocalizations.of(context)!.modpack_search_minimum_characters(widget.source.minimumQueryLength),
+          style: WidgetUtils.customTextStyle(16, FontWeight.w300, ColorUtils.secondaryFontColor),
+        ),
+      );
+    }
     if (_modpacks.isEmpty && !_isLoading) {
       return Center(
         child: Text(
@@ -267,7 +277,7 @@ class _ModrinthViewState extends State<ModrinthView> {
             crossAxisCount: _modpackGridColumnCount(width),
             crossAxisSpacing: 8,
             mainAxisSpacing: 8,
-            mainAxisExtent: 124,
+            mainAxisExtent: 116,
           ),
           itemCount: _modpacks.length,
           itemBuilder: (context, index) {
@@ -281,93 +291,119 @@ class _ModrinthViewState extends State<ModrinthView> {
   }
 
   Widget _buildModpackItem(dynamic modpack) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        elevation: 15,
-        color: ColorUtils.dynamicPrimaryForegroundColor,
-        shadowColor: ColorUtils.defaultShadowColor,
-        borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
-        child: InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => ModpackDetailView(modpack: modpack)),
-            );
-          },
+    final incompatible = widget.source is FtbBrowserSource && ftbPackCompatibility(modpack as Map) == FtbCompatibility.incompatible;
+    return Stack(
+      children: [
+        Positioned.fill(
+            child: Material(
+          elevation: 15,
+          color: ColorUtils.dynamicPrimaryForegroundColor,
+          shadowColor: ColorUtils.defaultShadowColor,
           borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(Globals.borderRadius - 4),
-                  child: CachedNetworkImage(
-                    imageUrl: modpack["icon_url"] ?? "",
-                    width: 100,
-                    height: 100,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(color: ColorUtils.dynamicSecondaryForegroundColor),
-                    errorWidget: (context, url, error) => Container(
+          child: InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => widget.detailBuilder(context, modpack as Map<String, dynamic>)),
+              );
+            },
+            borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(Globals.borderRadius - 4),
+                    child: CachedNetworkImage(
+                      imageUrl: modpack["icon_url"] ?? "",
                       width: 100,
                       height: 100,
-                      color: ColorUtils.dynamicSecondaryForegroundColor,
-                      child: Icon(Icons.apps, color: ColorUtils.secondaryFontColor),
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(color: ColorUtils.dynamicSecondaryForegroundColor),
+                      errorWidget: (context, url, error) => Container(
+                        width: 100,
+                        height: 100,
+                        color: ColorUtils.dynamicSecondaryForegroundColor,
+                        child: Icon(Icons.apps, color: ColorUtils.secondaryFontColor),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Replace the Expanded Column in _buildModpackItem with this:
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          modpack["title"] ?? "",
+                          style: WidgetUtils.customTextStyle(17, FontWeight.w600, ColorUtils.primaryFontColor),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          AppLocalizations.of(context)!.modpack_author_by(
+                            modpack["author"] ?? AppLocalizations.of(context)!.modpack_unknown_author,
+                          ),
+                          style: WidgetUtils.customTextStyle(12, FontWeight.w400, ColorUtils.dynamicAccentColor),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2), // was 4
+                        Flexible(
+                          // <-- wrap description in Flexible
+                          child: Text(
+                            modpack["description"] ?? "",
+                            style: WidgetUtils.customTextStyle(13, FontWeight.w300, ColorUtils.secondaryFontColor),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(height: 4), // was 10
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                _buildMetaData(Icons.download, _formatNumber(modpack["downloads"]), Colors.grey),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        )),
+        if (incompatible)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: GlassMorphism(
+                blur: 5,
+                opacity: ColorUtils.isMaterial ? 0.75 : 0.65,
+                radius: Globals.borderRadius.toDouble(),
+                color: ColorUtils.dynamicPrimaryForegroundColor,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      AppLocalizations.of(context)!.modpack_incompatible,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: WidgetUtils.customTextStyle(14, FontWeight.w600, ColorUtils.primaryFontColor),
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
-                // Replace the Expanded Column in _buildModpackItem with this:
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        modpack["title"] ?? "",
-                        style: WidgetUtils.customTextStyle(17, FontWeight.w600, ColorUtils.primaryFontColor),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        AppLocalizations.of(context)!.modpack_author_by(
-                          modpack["author"] ?? AppLocalizations.of(context)!.modpack_unknown_author,
-                        ),
-                        style: WidgetUtils.customTextStyle(12, FontWeight.w400, ColorUtils.dynamicAccentColor),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2), // was 4
-                      Flexible(
-                        // <-- wrap description in Flexible
-                        child: Text(
-                          modpack["description"] ?? "",
-                          style: WidgetUtils.customTextStyle(13, FontWeight.w300, ColorUtils.secondaryFontColor),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(height: 4), // was 10
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              _buildMetaData(Icons.download, _formatNumber(modpack["downloads"]), Colors.grey),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+      ],
     );
   }
 

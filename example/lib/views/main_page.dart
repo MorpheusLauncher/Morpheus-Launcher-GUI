@@ -17,19 +17,22 @@ import 'package:morpheus_launcher_gui/globals.dart';
 import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
 import 'package:morpheus_launcher_gui/main.dart';
 import 'package:morpheus_launcher_gui/utils/circle_utils.dart';
-import 'package:morpheus_launcher_gui/utils/glass_morphism.dart';
 import 'package:morpheus_launcher_gui/utils/launcher//version_utils.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/ftb_utils.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/launch_utils.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/modpack_installations.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/modrinth_utils.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/parallel_downloads.dart';
 import 'package:morpheus_launcher_gui/utils/morpheus_icons_icons.dart';
 import 'package:morpheus_launcher_gui/utils/skinmodel/skin_utils.dart';
 import 'package:morpheus_launcher_gui/utils/skinmodel/skin_viewer.dart';
 import 'package:morpheus_launcher_gui/utils/widget_utils.dart';
-import 'package:morpheus_launcher_gui/views/modrinth_view.dart';
+import 'package:morpheus_launcher_gui/views/modpacks/common/modpack_tile.dart';
+import 'package:morpheus_launcher_gui/views/modpacks/feedthebeast_view.dart';
+import 'package:morpheus_launcher_gui/views/modpacks/modrinth_view.dart';
 import 'package:morpheus_launcher_gui/views/widget_news.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:system_theme/system_theme.dart';
-import 'package:text_divider/text_divider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class MainPage extends StatefulWidget {
@@ -45,13 +48,19 @@ class _MainPageState extends State<MainPage> {
   @override
   void initState() {
     super.initState();
+    ModpackInstallations.instance.addListener(_refreshInstallations);
     rebuild();
   }
 
   @override
   void dispose() {
+    ModpackInstallations.instance.removeListener(_refreshInstallations);
     _themeNotifier.dispose();
     super.dispose();
+  }
+
+  void _refreshInstallations() {
+    if (mounted) setState(() {});
   }
 
   Future<void> rebuild() async {
@@ -109,42 +118,6 @@ class _MainPageState extends State<MainPage> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildResponsiveTileGrid(
-    List<Widget> children, {
-    double minTileWidth = 340,
-    double spacing = 8,
-    double runSpacing = 0,
-    int maxColumns = 4,
-  }) {
-    if (children.isEmpty) return const SizedBox.shrink();
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.hasBoundedWidth ? constraints.maxWidth : MediaQuery.of(context).size.width;
-        final columns = WidgetUtils.responsiveColumnCount(
-          width,
-          minTileWidth: minTileWidth,
-          spacing: spacing,
-          maxColumns: maxColumns,
-        );
-
-        final tileWidth = (width - (spacing * (columns - 1))) / columns;
-
-        return Wrap(
-          spacing: spacing,
-          runSpacing: runSpacing,
-          children: [
-            for (final child in children)
-              SizedBox(
-                width: tileWidth,
-                child: child,
-              ),
-          ],
-        );
-      },
     );
   }
 
@@ -327,23 +300,8 @@ class _MainPageState extends State<MainPage> {
         /** Versioni pinnate */
         if (Globals.pinnedVersions.isNotEmpty) ...[
           /** Divider Versioni Preferite */
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 5),
-            child: TextDivider(
-              color: ColorUtils.secondaryFontColor.withAlpha(80),
-              thickness: 2,
-              text: Text(
-                AppLocalizations.of(context)!.home_favourite_title,
-                textAlign: TextAlign.center,
-                style: WidgetUtils.customTextStyle(
-                  20,
-                  FontWeight.w300,
-                  ColorUtils.primaryFontColor,
-                ),
-              ),
-            ),
-          ),
-          _buildResponsiveTileGrid([
+          WidgetUtils.sectionDivider(AppLocalizations.of(context)!.home_favourite_title),
+          WidgetUtils.responsiveTileGrid([
             for (var version in VersionUtils.getAllVersions())
               if (Globals.pinnedVersions.contains(version["id"]))
                 buildVanillaItem(
@@ -358,27 +316,12 @@ class _MainPageState extends State<MainPage> {
                 ),
           ]),
           /** Divider News/Changelog mojang */
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 5),
-            child: TextDivider(
-              color: ColorUtils.secondaryFontColor.withAlpha(80),
-              thickness: 2,
-              text: Text(
-                AppLocalizations.of(context)!.home_news_title,
-                textAlign: TextAlign.center,
-                style: WidgetUtils.customTextStyle(
-                  20,
-                  FontWeight.w300,
-                  ColorUtils.primaryFontColor,
-                ),
-              ),
-            ),
-          ),
+          WidgetUtils.sectionDivider(AppLocalizations.of(context)!.home_news_title),
         ],
 
         /** Changelog */
         if (Globals.isNewsAvailable) ...[
-          _buildResponsiveTileGrid(
+          WidgetUtils.responsiveTileGrid(
             [
               for (var version in Globals.vanillaNewsResponse)
                 if ((version["type"] == "release" && Globals.showOnlyReleases) || !Globals.showOnlyReleases)
@@ -527,7 +470,7 @@ class _MainPageState extends State<MainPage> {
         _buildMorpheusHero(),
         const SizedBox(height: 8),
         if (Globals.morpheusVersionsResponse != null) ...[
-          _buildResponsiveTileGrid(
+          WidgetUtils.responsiveTileGrid(
             [
               for (var prodotto in Globals.morpheusVersionsResponse)
                 buildMorpheusItem(
@@ -828,7 +771,7 @@ class _MainPageState extends State<MainPage> {
           ),
 
         /** Ultime versioni */
-        _buildResponsiveTileGrid([
+        WidgetUtils.responsiveTileGrid([
           buildVanillaItem(
             AppLocalizations.of(context)!.vanilla_release_title,
             Globals.vanillaVersionsResponse != null ? Globals.vanillaVersionsResponse["latest"]["release"] : "",
@@ -851,7 +794,7 @@ class _MainPageState extends State<MainPage> {
         ),
 
         /** Lista completa delle versioni solo vanilla (misto) */
-        _buildResponsiveTileGrid([
+        WidgetUtils.responsiveTileGrid([
           for (var version in VersionUtils.getMinecraftVersions(false))
             if ((version["type"] == "release" && Globals.showOnlyReleases) || !Globals.showOnlyReleases)
               buildVanillaItem(
@@ -1143,25 +1086,6 @@ class _MainPageState extends State<MainPage> {
     return _selectedFilters.contains(label);
   }
 
-  Widget _buildDivider(String label) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: TextDivider(
-        color: ColorUtils.secondaryFontColor.withAlpha(80),
-        thickness: 2,
-        text: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: WidgetUtils.customTextStyle(
-            20,
-            FontWeight.w300,
-            ColorUtils.primaryFontColor,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildModloaderSection({
     required String label,
     required List<Widget> children,
@@ -1216,7 +1140,7 @@ class _MainPageState extends State<MainPage> {
           // Children
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-            child: _buildResponsiveTileGrid(children),
+            child: WidgetUtils.responsiveTileGrid(children),
           ),
         ],
       ),
@@ -1308,14 +1232,22 @@ class _MainPageState extends State<MainPage> {
           }).toList()
         : [];
 
-    // Loaded from .morpheus/modrinth-packs/index.json — works fully offline
+    // I due provider leggono le istanze installate da disco, anche offline.
     final installedModpacks = ModrinthUtils.readIndex();
+    final installedFtbPacks = FtbUtils.readIndex();
+
+    // Il registro dei download è condiviso; ogni attività compare nella sezione del suo provider.
+    final tasks = ModpackInstallations.instance.tasks.toList();
+    final modrinthTasks = tasks.where((task) => task.provider == 'modrinth').toList();
+    final ftbTasks = tasks.where((task) => task.provider == 'ftb').toList();
 
     return ListView(
       children: [
-        // ── Modrinth browser button (online only) ──────────────────────────
+        // Cataloghi online: accesso ai browser Modrinth e Feed The Beast.
         if (Globals.isVersionsAvailable) ...[
-          _buildDivider(AppLocalizations.of(context)!.modded_modrinth_section_title),
+          WidgetUtils.sectionDivider(AppLocalizations.of(context)!.modded_modrinth_section_title),
+
+          // Apri il catalogo Modrinth.
           Padding(
             padding: const EdgeInsets.fromLTRB(0, 4, 0, 0),
             child: SizedBox(
@@ -1361,19 +1293,61 @@ class _MainPageState extends State<MainPage> {
               ),
             ),
           ),
+
+          // Apri il catalogo FTB.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(0, 4, 0, 0),
+            child: SizedBox(
+              height: 55,
+              width: double.infinity,
+              child: Material(
+                elevation: 15,
+                color: ColorUtils.dynamicPrimaryForegroundColor,
+                shadowColor: ColorUtils.defaultShadowColor,
+                borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
+                child: InkWell(
+                  onTap: () async {
+                    await Navigator.push(context, MaterialPageRoute(builder: (_) => const FtbView()));
+                    if (mounted) setState(() {});
+                  },
+                  borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
+                  child: Row(children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: ClipOval(
+                        child: Image.asset('assets/feedthebeast.jpg', width: 30, height: 30, fit: BoxFit.cover),
+                      ),
+                    ),
+                    Text(AppLocalizations.of(context)!.modded_ftb_button, style: WidgetUtils.customTextStyle(16, FontWeight.w500, ColorUtils.primaryFontColor)),
+                  ]),
+                ),
+              ),
+            ),
+          ),
         ],
 
-        // ── Installed Modrinth modpacks (offline-friendly) ─────────────────
-        if (installedModpacks.isNotEmpty) ...[
-          _buildDivider(AppLocalizations.of(context)!.modded_modrinth_title),
-          _buildResponsiveTileGrid([
-            for (final pack in installedModpacks) _buildModrinthPackItem(pack),
+        // Libreria Modrinth: la scheda del download sostituisce quella dell'istanza con lo stesso slug.
+        if (installedModpacks.isNotEmpty || modrinthTasks.isNotEmpty) ...[
+          WidgetUtils.sectionDivider(AppLocalizations.of(context)!.modded_modrinth_title),
+          WidgetUtils.responsiveTileGrid([
+            for (final task in modrinthTasks) _buildInstallProgressItem(task),
+            for (final pack in installedModpacks)
+              if (!modrinthTasks.any((task) => task.key == 'modrinth:${pack['slug']}')) _buildModrinthPackItem(pack),
+          ]),
+        ],
+        // Libreria FTB: stessa logica, ma le istanze sono identificate dal projectId.
+        if (installedFtbPacks.isNotEmpty || ftbTasks.isNotEmpty) ...[
+          WidgetUtils.sectionDivider(AppLocalizations.of(context)!.modded_ftb_title),
+          WidgetUtils.responsiveTileGrid([
+            for (final task in ftbTasks) _buildInstallProgressItem(task),
+            for (final pack in installedFtbPacks)
+              if (!ftbTasks.any((task) => task.key == 'ftb:${pack['projectId']}')) _buildModrinthPackItem(pack, isFtb: true),
           ]),
         ],
 
-        // ── Installed modded versions (Forge/Fabric/etc.) ──────────────────
-        if (VersionUtils.getMinecraftVersions(true).isNotEmpty) _buildDivider(AppLocalizations.of(context)!.modded_installed_title),
-        if (VersionUtils.getMinecraftVersions(true).isEmpty && !Globals.isVersionsAvailable && installedModpacks.isEmpty)
+        // Versioni modificate di Minecraft già installate, distinte dai modpack dei due cataloghi.
+        if (VersionUtils.getMinecraftVersions(true).isNotEmpty) WidgetUtils.sectionDivider(AppLocalizations.of(context)!.modded_installed_title),
+        if (VersionUtils.getMinecraftVersions(true).isEmpty && !Globals.isVersionsAvailable && installedModpacks.isEmpty && installedFtbPacks.isEmpty && tasks.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 20),
             child: Text(
@@ -1382,7 +1356,7 @@ class _MainPageState extends State<MainPage> {
               style: WidgetUtils.customTextStyle(22, FontWeight.w300, ColorUtils.primaryFontColor),
             ),
           ),
-        _buildResponsiveTileGrid([
+        WidgetUtils.responsiveTileGrid([
           for (var version in VersionUtils.getMinecraftVersions(true))
             buildVanillaItem(
               version["type"],
@@ -1392,8 +1366,8 @@ class _MainPageState extends State<MainPage> {
             ),
         ]),
 
-        // ── Available modloader versions ───────────────────────────────────
-        _buildDivider(AppLocalizations.of(context)!.modded_available_versions_title),
+        // Versioni dei modloader disponibili, raggruppate per loader e filtrate dalle selezioni.
+        WidgetUtils.sectionDivider(AppLocalizations.of(context)!.modded_available_versions_title),
         _buildFilterChips(),
         const SizedBox(height: 4),
         if (_isVisible("OptiFine") && Globals.optifineVersions != null)
@@ -1450,9 +1424,86 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  /// Builds a single row for an installed Modrinth modpack.
-  /// Reads all data from index.json — no network needed.
-  Widget _buildModrinthPackItem(Map<String, dynamic> pack) {
+  /// Scheda comune a Modrinth e FTB: mostra il progresso e permette di annullare
+  /// l'installazione. In caso di errore, la X chiude la segnalazione.
+  Widget _buildInstallProgressItem(ModpackInstallation task) {
+    return ModpackTile(
+      child: Stack(
+        children: [
+          if (task.error == null)
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: FractionallySizedBox(
+                    widthFactor: task.progress.clamp(0.0, 1.0),
+                    heightFactor: 1,
+                    child: ColoredBox(color: ColorUtils.dynamicAccentColor.withAlpha(65)),
+                  ),
+                ),
+              ),
+            ),
+          Row(children: [
+            const SizedBox(width: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: task.iconUrl.isEmpty
+                  ? _modrinthIconPlaceholder()
+                  : CachedNetworkImage(
+                      imageUrl: task.iconUrl,
+                      width: 30,
+                      height: 30,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => _modrinthIconPlaceholder(),
+                      errorWidget: (_, __, ___) => _modrinthIconPlaceholder()),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                Row(children: [
+                  Expanded(
+                    child: Text(task.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: WidgetUtils.customTextStyle(16, FontWeight.w500, ColorUtils.primaryFontColor)),
+                  ),
+                  if (task.error == null) ...[
+                    const SizedBox(width: 8),
+                    Text('${(task.progress * 100).toInt()}%', style: WidgetUtils.customTextStyle(13, FontWeight.w600, ColorUtils.primaryFontColor)),
+                  ],
+                ]),
+                Text(task.error == null ? task.status : '${AppLocalizations.of(context)!.generic_error_msg}: ${task.error}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: WidgetUtils.customTextStyle(11, FontWeight.w300, task.error == null ? ColorUtils.secondaryFontColor : Colors.redAccent)),
+              ]),
+            ),
+            const SizedBox(width: 8),
+            if (task.error == null) ...[
+              Tooltip(
+                message: AppLocalizations.of(context)!.generic_cancel,
+                child: Opacity(
+                  opacity: task.cancellation.canCancel ? 1 : 0.5,
+                  child: IgnorePointer(
+                    ignoring: !task.cancellation.canCancel,
+                    child: WidgetUtils.buildButton(
+                      Icons.close,
+                      Colors.redAccent,
+                      Colors.white,
+                      () => ModpackInstallations.instance.cancel(task.key),
+                    ),
+                  ),
+                ),
+              ),
+            ] else
+              IconButton(icon: const Icon(Icons.close), color: ColorUtils.secondaryFontColor, onPressed: () => ModpackInstallations.instance.dismiss(task.key)),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  /// Scheda di un modpack installato. [isFtb] seleziona il provider da usare
+  /// per leggere le dipendenze, avviare il gioco o rimuovere l'istanza.
+  Widget _buildModrinthPackItem(Map<String, dynamic> pack, {bool isFtb = false}) {
     final slug = pack['slug']?.toString() ?? '';
     final title = pack['title']?.toString() ?? slug;
     final iconUrl = pack['iconUrl']?.toString() ?? '';
@@ -1460,174 +1511,165 @@ class _MainPageState extends State<MainPage> {
     final loader = pack['loader']?.toString() ?? '';
     final versionName = pack['versionName']?.toString() ?? '';
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 4, 0, 0),
-      child: SizedBox(
-        height: 55,
-        width: double.infinity,
-        child: Material(
-          elevation: 15,
-          color: ColorUtils.dynamicPrimaryForegroundColor,
-          shadowColor: ColorUtils.defaultShadowColor,
-          borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Icon
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.all(Radius.circular(6)),
-                  child: iconUrl.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: iconUrl,
-                          width: 30,
-                          height: 30,
-                          fit: BoxFit.cover,
-                          placeholder: (_, __) => _modrinthIconPlaceholder(),
-                          errorWidget: (_, __, ___) => _modrinthIconPlaceholder(),
-                        )
-                      : _modrinthIconPlaceholder(),
-                ),
-              ),
-
-              // Title + subtitle
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: WidgetUtils.customTextStyle(16, FontWeight.w500, ColorUtils.primaryFontColor),
-                    ),
-                    Text(
-                      '$loader $mcVersion, ver. $versionName',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: WidgetUtils.customTextStyle(12, FontWeight.w300, ColorUtils.secondaryFontColor),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Delete button
-              WidgetUtils.buildButton(
-                Icons.delete_outline,
-                Colors.redAccent,
-                Colors.white,
-                () {
-                  WidgetUtils.showPopup(
-                    context,
-                    title,
-                    <Widget>[
-                      const Text(
-                        'Remove this modpack and all its files?',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Comfortaa',
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ],
-                    <Widget>[
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(
-                          AppLocalizations.of(context)!.generic_cancel,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Comfortaa',
-                            fontWeight: FontWeight.w300,
-                          ),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () async {
-                          Navigator.pop(context);
-                          await ModrinthUtils.removeInstance(slug);
-                          setState(() {});
-                        },
-                        child: const Text(
-                          'Remove',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Comfortaa',
-                            fontWeight: FontWeight.w700,
-                            color: Colors.redAccent,
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-
-              // Launch button
-              WidgetUtils.buildButton(
-                Icons.rocket_launch,
-                ColorUtils.dynamicAccentColor,
-                Colors.white,
-                () async {
-                  final deps = ModrinthUtils.getDependencies(slug);
-                  final mcVer = deps['minecraft'] ?? mcVersion;
-                  final loaderName = loader;
-                  final modLoader = LaunchPolicy.loaderFromModrinthId(loaderName);
-
-                  String gameVersion;
-
-                  switch (loaderName) {
-                    case 'fabric':
-                      final loaderVer =
-                          deps['fabric-loader'] ?? (Globals.fabricLoaderVersionsResponse?.isNotEmpty == true ? Globals.fabricLoaderVersionsResponse[0]['version'].toString() : '');
-                      gameVersion = loaderVer.isNotEmpty ? 'fabric-loader-$loaderVer-$mcVer' : mcVer;
-                      break;
-                    case 'forge':
-                      final forgeVer = deps['forge'] ?? '';
-                      gameVersion = forgeVer.isNotEmpty ? '$mcVer-forge-$forgeVer' : mcVer;
-                      break;
-                    case 'quilt':
-                      final quiltVer = deps['quilt-loader'] ?? '';
-                      gameVersion = quiltVer.isNotEmpty ? 'quilt-loader-$quiltVer-$mcVer' : mcVer;
-                      break;
-                    case 'neoforge':
-                      final neoVer = deps['neoforge'] ?? '';
-                      gameVersion = neoVer.isNotEmpty ? 'neoforge-$neoVer' : mcVer;
-                      break;
-                    default:
-                      gameVersion = mcVer;
-                  }
-
-                  final config = LaunchConfig(
-                    gameVersion: gameVersion,
-                    productId: null,
-                    isModded: modLoader != ModLoader.vanilla,
-                    realGameVersion: mcVer,
-                    loader: modLoader,
-                    // I modpack Modrinth forzano sempre la classpath, a prescindere dal loader.
-                    forceClassPath: true,
-                    startOnFirstThread: LaunchUtils.shouldUseStartOnFirstThread(mcVer),
-                    jvmArgs: [],
-                    launcherArgs: [],
-                  );
-
-                  await LaunchUtils.launchMinecraft(
-                    context,
-                    config,
-                    onAccountRequired: () {
-                      setState(() => Globals.navSelected = NavSection.accounts);
-                    },
-                    gameDirectory: ModrinthUtils.gameDir(slug),
-                  );
-                },
-              ),
-            ],
+    return ModpackTile(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.all(Radius.circular(6)),
+              child: iconUrl.isNotEmpty
+                  ? CachedNetworkImage(
+                      imageUrl: iconUrl,
+                      width: 30,
+                      height: 30,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => _modrinthIconPlaceholder(),
+                      errorWidget: (_, __, ___) => _modrinthIconPlaceholder(),
+                    )
+                  : _modrinthIconPlaceholder(),
+            ),
           ),
-        ),
+
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: WidgetUtils.customTextStyle(16, FontWeight.w500, ColorUtils.primaryFontColor),
+                ),
+                Text(
+                  '$loader $mcVersion, ver. $versionName',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: WidgetUtils.customTextStyle(12, FontWeight.w300, ColorUtils.secondaryFontColor),
+                ),
+              ],
+            ),
+          ),
+
+          // Rimozione: dopo la conferma, il provider elimina l'istanza e i suoi file.
+          WidgetUtils.buildButton(
+            Icons.delete_outline,
+            Colors.redAccent,
+            Colors.white,
+            () {
+              WidgetUtils.showPopup(
+                context,
+                title,
+                <Widget>[
+                  const Text(
+                    'Remove this modpack and all its files?',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Comfortaa',
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+                <Widget>[
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(
+                      AppLocalizations.of(context)!.generic_cancel,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Comfortaa',
+                        fontWeight: FontWeight.w300,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      if (isFtb) {
+                        await FtbUtils.removeInstance(slug);
+                      } else {
+                        await ModrinthUtils.removeInstance(slug);
+                      }
+                      setState(() {});
+                    },
+                    child: const Text(
+                      'Remove',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Comfortaa',
+                        fontWeight: FontWeight.w700,
+                        color: Colors.redAccent,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+
+          // Avvio: dalle dipendenze del pack ricaviamo l'ID versione atteso dal launcher Java.
+          WidgetUtils.buildButton(
+            Icons.rocket_launch,
+            ColorUtils.dynamicAccentColor,
+            Colors.white,
+            () async {
+              final deps = isFtb ? Map<String, String>.from(FtbUtils.readMeta(slug)?['dependencies'] as Map? ?? {}) : ModrinthUtils.getDependencies(slug);
+              final mcVer = deps['minecraft'] ?? mcVersion;
+              final loaderName = loader;
+              final modLoader = LaunchPolicy.loaderFromModrinthId(loaderName);
+
+              String gameVersion;
+
+              switch (loaderName) {
+                case 'fabric':
+                  final loaderVer =
+                      deps['fabric-loader'] ?? (Globals.fabricLoaderVersionsResponse?.isNotEmpty == true ? Globals.fabricLoaderVersionsResponse[0]['version'].toString() : '');
+                  gameVersion = loaderVer.isNotEmpty ? 'fabric-loader-$loaderVer-$mcVer' : mcVer;
+                  break;
+                case 'forge':
+                  final forgeVer = deps['forge'] ?? '';
+                  gameVersion = forgeVer.isNotEmpty ? '$mcVer-forge-$forgeVer' : mcVer;
+                  break;
+                case 'quilt':
+                  final quiltVer = deps['quilt-loader'] ?? '';
+                  gameVersion = quiltVer.isNotEmpty ? 'quilt-loader-$quiltVer-$mcVer' : mcVer;
+                  break;
+                case 'neoforge':
+                  final neoVer = deps['neoforge'] ?? '';
+                  gameVersion = neoVer.isNotEmpty ? 'neoforge-$neoVer' : mcVer;
+                  break;
+                default:
+                  gameVersion = mcVer;
+              }
+
+              final config = LaunchConfig(
+                gameVersion: gameVersion,
+                productId: null,
+                isModded: modLoader != ModLoader.vanilla,
+                realGameVersion: mcVer,
+                loader: modLoader,
+                // Entrambi i provider avviano i modpack con la classpath forzata.
+                forceClassPath: true,
+                startOnFirstThread: LaunchUtils.shouldUseStartOnFirstThread(mcVer),
+                jvmArgs: [],
+                launcherArgs: [],
+              );
+
+              await LaunchUtils.launchMinecraft(
+                context,
+                config,
+                onAccountRequired: () {
+                  setState(() => Globals.navSelected = NavSection.accounts);
+                },
+                gameDirectory: isFtb ? FtbUtils.instanceDir(slug) : ModrinthUtils.gameDir(slug),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -1650,22 +1692,7 @@ class _MainPageState extends State<MainPage> {
     return ListView(
       children: [
         /** Separatore */
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 5),
-          child: TextDivider(
-            color: ColorUtils.secondaryFontColor.withAlpha(80),
-            thickness: 2,
-            text: Text(
-              AppLocalizations.of(context)!.settings_appearance_label,
-              textAlign: TextAlign.center,
-              style: WidgetUtils.customTextStyle(
-                20,
-                FontWeight.w300,
-                ColorUtils.primaryFontColor,
-              ),
-            ),
-          ),
-        ),
+        WidgetUtils.sectionDivider(AppLocalizations.of(context)!.settings_appearance_label),
 
         /** Setting per la darkmode */
         WidgetUtils.buildSettingSwitchItem(
@@ -1851,120 +1878,34 @@ class _MainPageState extends State<MainPage> {
         ),
 
         /** Setting Tema */
-        WidgetUtils.buildSettingContainerItem(
-          Stack(
-            children: [
-              Row(
-                children: [
-                  SizedBox(
-                    height: 55,
-                    width: 45,
-                    child: Center(
-                      child: Material(
-                        elevation: 10,
-                        color: Colors.transparent,
-                        shadowColor: ColorUtils.defaultShadowColor,
-                        borderRadius: const BorderRadius.all(Radius.circular(10)),
-                        child: Icon(
-                          Icons.brush,
-                          color: ColorUtils.primaryFontColor,
-                          size: 26,
-                        ),
-                      ),
-                    ),
-                  ),
-                  /** Nome del setting */
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(0, 2, 0, 2),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!.settings_theme,
-                          style: WidgetUtils.customTextStyle(
-                            16,
-                            FontWeight.w500,
-                            ColorUtils.primaryFontColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 7),
-                    child: Builder(
-                      builder: (context) {
-                        final picker = PopupMenuButton<String>(
-                          position: PopupMenuPosition.under,
-                          offset: const Offset(0, 4),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 140),
-                          color: Colors.transparent,
-                          elevation: 0,
-                          itemBuilder: (context) => [
-                            _ThemePickerMenu(
-                              themes: Globals.WindowThemes,
-                              selected: _themeNotifier.value,
-                            ),
-                          ],
-                          onSelected: (value) async {
-                            setState(() {
-                              _themeNotifier.value = value;
-                              Globals.selectedWindowTheme = value;
-                            });
-                            ColorUtils.isMaterial = value.contains('Material');
-                            if (ColorUtils.isMaterial) Globals.fullTransparent = false;
+        WidgetUtils.settingRow(
+          icon: Icons.brush,
+          title: AppLocalizations.of(context)!.settings_theme,
+          control: SettingPicker<String>(
+            values: Globals.WindowThemes,
+            selected: _themeNotifier.value,
+            label: (value) => value,
+            onSelected: (value) async {
+              setState(() {
+                _themeNotifier.value = value;
+                Globals.selectedWindowTheme = value;
+              });
+              ColorUtils.isMaterial = value.contains('Material');
+              if (ColorUtils.isMaterial) Globals.fullTransparent = false;
 
-                            final prefs = await SharedPreferences.getInstance();
-                            await prefs.setString('themeSet', value);
-                            ColorUtils.reloadColors();
-                            Window.setEffect(
-                              effect: getWindowEffect(),
-                              color: ColorUtils.dynamicBackgroundColor,
-                              dark: Globals.darkModeTheme,
-                            );
-                            if (Platform.isMacOS) {
-                              Window.overrideMacOSBrightness(dark: Globals.darkModeTheme);
-                            }
-                            if (mounted) setState(() {});
-                          },
-                          child: SizedBox(
-                            height: 40,
-                            width: 140,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      _themeNotifier.value ?? '',
-                                      overflow: TextOverflow.ellipsis,
-                                      style: WidgetUtils.customTextStyle(16, FontWeight.w500, ColorUtils.primaryFontColor),
-                                    ),
-                                  ),
-                                  Icon(Icons.keyboard_arrow_down, size: 20, color: ColorUtils.primaryFontColor),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                        return Material(
-                          color: ColorUtils.dynamicSecondaryForegroundColor,
-                          borderRadius: BorderRadius.circular(Globals.borderRadius - 4),
-                          clipBehavior: Clip.antiAlias,
-                          child: picker,
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ],
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setString('themeSet', value);
+              ColorUtils.reloadColors();
+              Window.setEffect(
+                effect: getWindowEffect(),
+                color: ColorUtils.dynamicBackgroundColor,
+                dark: Globals.darkModeTheme,
+              );
+              if (Platform.isMacOS) {
+                Window.overrideMacOSBrightness(dark: Globals.darkModeTheme);
+              }
+              if (mounted) setState(() {});
+            },
           ),
         ),
 
@@ -1990,20 +1931,19 @@ class _MainPageState extends State<MainPage> {
         ],
 
         /** Separatore */
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 5),
-          child: TextDivider(
-            color: ColorUtils.secondaryFontColor.withAlpha(80),
-            thickness: 2,
-            text: Text(
-              AppLocalizations.of(context)!.settings_misc_label,
-              textAlign: TextAlign.center,
-              style: WidgetUtils.customTextStyle(
-                20,
-                FontWeight.w300,
-                ColorUtils.primaryFontColor,
-              ),
-            ),
+        WidgetUtils.sectionDivider(AppLocalizations.of(context)!.settings_misc_label),
+        // Download simultanei per singolo modpack: il limite vale sia per Modrinth sia per FTB.
+        WidgetUtils.settingRow(
+          icon: Icons.download_rounded,
+          title: AppLocalizations.of(context)!.settings_modpack_downloads,
+          control: SettingPicker<int>(
+            selected: ModpackDownloadSettings.limit,
+            values: List.generate(ModpackDownloadSettings.maxLimit, (i) => i + 1),
+            label: (value) => '$value',
+            onSelected: (value) async {
+              await ModpackDownloadSettings.save(value);
+              if (mounted) setState(() {});
+            },
           ),
         ),
 
@@ -2367,22 +2307,7 @@ class _MainPageState extends State<MainPage> {
         ),
 
         /** Separatore */
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 5),
-          child: TextDivider(
-            color: ColorUtils.secondaryFontColor.withAlpha(80),
-            thickness: 2,
-            text: Text(
-              AppLocalizations.of(context)!.settings_account_label,
-              textAlign: TextAlign.center,
-              style: WidgetUtils.customTextStyle(
-                20,
-                FontWeight.w300,
-                ColorUtils.primaryFontColor,
-              ),
-            ),
-          ),
-        ),
+        WidgetUtils.sectionDivider(AppLocalizations.of(context)!.settings_account_label),
 
         /**/
         WidgetUtils.buildSettingContainerItem(
@@ -2871,7 +2796,7 @@ class _MainPageState extends State<MainPage> {
       children: [
         if (Globals.accounts.isNotEmpty) ...[
           /** Lista degli account */
-          _buildResponsiveTileGrid(
+          WidgetUtils.responsiveTileGrid(
             [
               for (var account in Globals.accounts)
                 buildAccountEntry(
@@ -3304,65 +3229,5 @@ class AccountUtils {
         () => Navigator.pop(context),
       );
     }
-  }
-}
-
-class _ThemePickerMenu extends PopupMenuEntry<String> {
-  const _ThemePickerMenu({required this.themes, required this.selected});
-
-  final List<String> themes;
-  final String? selected;
-
-  @override
-  double get height => themes.length * 44.0 + 8;
-
-  @override
-  bool represents(String? value) => themes.contains(value);
-
-  @override
-  State<_ThemePickerMenu> createState() => _ThemePickerMenuState();
-}
-
-class _ThemePickerMenuState extends State<_ThemePickerMenu> {
-  @override
-  Widget build(BuildContext context) {
-    return GlassMorphism(
-      blur: 20,
-      opacity: ColorUtils.isMaterial ? 0.9 : 0.22,
-      radius: Globals.borderRadius - 4,
-      color: ColorUtils.dynamicSecondaryForegroundColor,
-      child: Material(
-        color: Colors.transparent,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (final theme in widget.themes)
-                InkWell(
-                  onTap: () => Navigator.pop(context, theme),
-                  child: SizedBox(
-                    height: 44,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              theme,
-                              style: WidgetUtils.customTextStyle(16, FontWeight.w500, ColorUtils.primaryFontColor),
-                            ),
-                          ),
-                          if (theme == widget.selected) Icon(Icons.check, size: 16, color: ColorUtils.primaryFontColor),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

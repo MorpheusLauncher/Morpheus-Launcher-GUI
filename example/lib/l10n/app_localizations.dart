@@ -238,6 +238,36 @@ abstract class AppLocalizations {
   /// **'Modpacks on Modrinth'**
   String get modded_modrinth_button;
 
+  /// No description provided for @modded_ftb_button.
+  ///
+  /// In en, this message translates to:
+  /// **'Modpacks on FTB'**
+  String get modded_ftb_button;
+
+  /// No description provided for @modded_ftb_title.
+  ///
+  /// In en, this message translates to:
+  /// **'FTB Modpacks'**
+  String get modded_ftb_title;
+
+  /// No description provided for @modpack_versions.
+  ///
+  /// In en, this message translates to:
+  /// **'Versions'**
+  String get modpack_versions;
+
+  /// No description provided for @modpack_ftb_install_unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'FTB installation is not available yet.'**
+  String get modpack_ftb_install_unavailable;
+
+  /// No description provided for @modpack_search_minimum_characters.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter at least {count} characters'**
+  String modpack_search_minimum_characters(int count);
+
   /// No description provided for @modded_modrinth_title.
   ///
   /// In en, this message translates to:
@@ -297,6 +327,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Download'**
   String get modpack_download_button;
+
+  /// No description provided for @modpack_incompatible.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsupported Minecraft version or modloader'**
+  String get modpack_incompatible;
 
   /// No description provided for @modpack_description_title.
   ///
@@ -465,6 +501,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Miscellaneous'**
   String get settings_misc_label;
+
+  /// No description provided for @settings_modpack_downloads.
+  ///
+  /// In en, this message translates to:
+  /// **'Simultaneous downloads per modpack'**
+  String get settings_modpack_downloads;
 
   /// No description provided for @settings_console_switch.
   ///
