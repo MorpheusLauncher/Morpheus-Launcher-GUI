@@ -1246,84 +1246,85 @@ class _MainPageState extends State<MainPage> {
         // Cataloghi online: accesso ai browser Modrinth e Feed The Beast.
         if (Globals.isVersionsAvailable) ...[
           WidgetUtils.sectionDivider(AppLocalizations.of(context)!.modded_modrinth_section_title),
-
-          // Apri il catalogo Modrinth.
-          Padding(
-            padding: const EdgeInsets.fromLTRB(0, 4, 0, 0),
-            child: SizedBox(
-              height: 55,
-              width: double.infinity,
-              child: Material(
-                elevation: 15,
-                color: ColorUtils.dynamicPrimaryForegroundColor,
-                shadowColor: ColorUtils.defaultShadowColor,
-                borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
-                child: InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const ModrinthView()),
-                    );
-                  },
+          WidgetUtils.responsiveTileGrid([
+            // Apri il catalogo Modrinth.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(0, 4, 0, 0),
+              child: SizedBox(
+                height: 55,
+                width: double.infinity,
+                child: Material(
+                  elevation: 15,
+                  color: ColorUtils.dynamicPrimaryForegroundColor,
+                  shadowColor: ColorUtils.defaultShadowColor,
                   borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
-                  child: Row(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: Container(
-                          height: 30,
-                          width: 30,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            image: DecorationImage(
-                              filterQuality: FilterQuality.none,
-                              image: AssetImage("assets/modrinth.png"),
-                              fit: BoxFit.contain,
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ModrinthView()),
+                      );
+                    },
+                    borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
+                    child: Row(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Container(
+                            height: 30,
+                            width: 30,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              image: DecorationImage(
+                                filterQuality: FilterQuality.none,
+                                image: AssetImage("assets/modrinth.png"),
+                                fit: BoxFit.contain,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      Text(
-                        AppLocalizations.of(context)!.modded_modrinth_button,
-                        style: WidgetUtils.customTextStyle(16, FontWeight.w500, ColorUtils.primaryFontColor),
-                      ),
-                    ],
+                        Text(
+                          AppLocalizations.of(context)!.modded_modrinth_button,
+                          style: WidgetUtils.customTextStyle(16, FontWeight.w500, ColorUtils.primaryFontColor),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
 
-          // Apri il catalogo FTB.
-          Padding(
-            padding: const EdgeInsets.fromLTRB(0, 4, 0, 0),
-            child: SizedBox(
-              height: 55,
-              width: double.infinity,
-              child: Material(
-                elevation: 15,
-                color: ColorUtils.dynamicPrimaryForegroundColor,
-                shadowColor: ColorUtils.defaultShadowColor,
-                borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
-                child: InkWell(
-                  onTap: () async {
-                    await Navigator.push(context, MaterialPageRoute(builder: (_) => const FtbView()));
-                    if (mounted) setState(() {});
-                  },
+            // Apri il catalogo FTB.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(0, 4, 0, 0),
+              child: SizedBox(
+                height: 55,
+                width: double.infinity,
+                child: Material(
+                  elevation: 15,
+                  color: ColorUtils.dynamicPrimaryForegroundColor,
+                  shadowColor: ColorUtils.defaultShadowColor,
                   borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
-                  child: Row(children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: ClipOval(
-                        child: Image.asset('assets/feedthebeast.jpg', width: 30, height: 30, fit: BoxFit.cover),
+                  child: InkWell(
+                    onTap: () async {
+                      await Navigator.push(context, MaterialPageRoute(builder: (_) => const FtbView()));
+                      if (mounted) setState(() {});
+                    },
+                    borderRadius: const BorderRadius.all(Radius.circular(Globals.borderRadius)),
+                    child: Row(children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: ClipOval(
+                          child: Image.asset('assets/feedthebeast.jpg', width: 30, height: 30, fit: BoxFit.cover),
+                        ),
                       ),
-                    ),
-                    Text(AppLocalizations.of(context)!.modded_ftb_button, style: WidgetUtils.customTextStyle(16, FontWeight.w500, ColorUtils.primaryFontColor)),
-                  ]),
+                      Text(AppLocalizations.of(context)!.modded_ftb_button, style: WidgetUtils.customTextStyle(16, FontWeight.w500, ColorUtils.primaryFontColor)),
+                    ]),
+                  ),
                 ),
               ),
             ),
-          ),
+          ]),
         ],
 
         // Libreria Modrinth: la scheda del download sostituisce quella dell'istanza con lo stesso slug.
