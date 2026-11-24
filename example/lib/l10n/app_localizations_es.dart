@@ -9,6 +9,12 @@ class AppLocalizationsEs extends AppLocalizations {
   AppLocalizationsEs([String locale = 'es']) : super(locale);
 
   @override
+  String get settings_language => 'Idioma';
+
+  @override
+  String get settings_language_system => 'Sistema';
+
+  @override
   String get generic_error_msg => 'Se ha producido un error';
 
   @override
@@ -220,7 +226,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settings_misc_label => 'Varios';
 
   @override
-  String get settings_modpack_downloads => 'Descargas simultáneas por modpack';
+  String get settings_modpack_downloads => 'Descargas simultáneas de recursos';
 
   @override
   String get settings_console_switch =>

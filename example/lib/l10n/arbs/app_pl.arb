@@ -1,5 +1,7 @@
 {
   "@@locale": "pl",
+  "settings_language": "Język",
+  "settings_language_system": "System",
 
   "generic_error_msg": "Wystąpił błąd",
   "generic_cancel": "Anuluj",
@@ -78,7 +80,7 @@
   "settings_appearance_label": "Wygląd",
   "settings_theme": "Motyw launchera",
   "settings_misc_label": "Różne",
-  "settings_modpack_downloads": "Równoczesne pobierania na modpack",
+  "settings_modpack_downloads": "Równoczesne pobieranie zasobów",
   "settings_console_switch": "Pokaż konsolę przy uruchamianiu gry",
   "settings_custom_folder_title": "Niestandardowy folder gry",
   "settings_custom_folder": "Katalog gry",

@@ -1,5 +1,7 @@
 {
   "@@locale": "en",
+  "settings_language": "Language",
+  "settings_language_system": "System",
 
   "generic_error_msg": "An error occurred",
   "generic_cancel": "Cancel",
@@ -83,7 +85,7 @@
   "settings_appearance_label": "Appearance",
   "settings_theme": "Launcher theme",
   "settings_misc_label": "Miscellaneous",
-  "settings_modpack_downloads": "Simultaneous downloads per modpack",
+  "settings_modpack_downloads": "Simultaneous resource downloads",
   "settings_console_switch": "Show console on game start",
   "settings_custom_folder_title": "Custom game folder",
   "settings_custom_folder": "Game directory",

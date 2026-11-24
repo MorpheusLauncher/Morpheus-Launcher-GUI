@@ -9,6 +9,12 @@ class AppLocalizationsPl extends AppLocalizations {
   AppLocalizationsPl([String locale = 'pl']) : super(locale);
 
   @override
+  String get settings_language => 'Język';
+
+  @override
+  String get settings_language_system => 'System';
+
+  @override
   String get generic_error_msg => 'Wystąpił błąd';
 
   @override
@@ -218,7 +224,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get settings_misc_label => 'Różne';
 
   @override
-  String get settings_modpack_downloads => 'Równoczesne pobierania na modpack';
+  String get settings_modpack_downloads => 'Równoczesne pobieranie zasobów';
 
   @override
   String get settings_console_switch => 'Pokaż konsolę przy uruchamianiu gry';

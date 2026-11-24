@@ -17,6 +17,7 @@ import 'package:morpheus_launcher_gui/globals.dart';
 import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
 import 'package:morpheus_launcher_gui/main.dart';
 import 'package:morpheus_launcher_gui/utils/circle_utils.dart';
+import 'package:morpheus_launcher_gui/utils/language_settings.dart';
 import 'package:morpheus_launcher_gui/utils/launcher//version_utils.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/ftb_utils.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/launch_utils.dart';
@@ -1875,6 +1876,26 @@ class _MainPageState extends State<MainPage> {
                 ],
               ),
             ],
+          ),
+        ),
+
+        WidgetUtils.settingRow(
+          icon: Icons.language,
+          title: AppLocalizations.of(context)!.settings_language,
+          control: SettingPicker<String>(
+            values: const ['system', 'de', 'en', 'es', 'fr', 'it', 'pl'],
+            selected: LanguageSettings.selected.value,
+            label: (value) => switch (value) {
+              'system' => AppLocalizations.of(context)!.settings_language_system,
+              'de' => 'Deutsch',
+              'en' => 'English',
+              'es' => 'Español',
+              'fr' => 'Français',
+              'it' => 'Italiano',
+              'pl' => 'Polski',
+              _ => value,
+            },
+            onSelected: LanguageSettings.save,
           ),
         ),
 

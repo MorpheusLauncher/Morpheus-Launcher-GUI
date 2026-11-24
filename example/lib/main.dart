@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:morpheus_launcher_gui/globals.dart';
 import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
+import 'package:morpheus_launcher_gui/utils/language_settings.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/news_utils.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/parallel_downloads.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/version_utils.dart';
@@ -35,6 +36,7 @@ Future<void> main() async {
   }
 
   WidgetsFlutterBinding.ensureInitialized();
+  LanguageSettings.load(await SharedPreferences.getInstance());
   SystemTheme.fallbackColor = Colors.deepPurpleAccent.withAlpha(160);
   await SystemTheme.accentColor.load();
   if (!Platform.isLinux) await Window.initialize();
@@ -62,17 +64,23 @@ Future<void> main() async {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      localeResolutionCallback: (locale, supportedLocales) {
-        return supportedLocales.firstWhere(
-          (supportedLocale) => supportedLocale.languageCode == locale?.languageCode,
-          orElse: () => const Locale('en'),
-        );
-      },
-      debugShowCheckedModeBanner: false,
-      home: MyAppBody(),
+    return ValueListenableBuilder<String>(
+      valueListenable: LanguageSettings.selected,
+      builder: (context, language, child) =>
+          MaterialApp(
+            locale: language == LanguageSettings.system ? null : Locale(language),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localeResolutionCallback: (locale, supportedLocales) {
+              return supportedLocales.firstWhere(
+                    (supportedLocale) => supportedLocale.languageCode == locale?.languageCode,
+                orElse: () => const Locale('en'),
+              );
+            },
+            debugShowCheckedModeBanner: false,
+            home: child,
+          ),
+      child: MyAppBody(),
     );
   }
 }
@@ -230,7 +238,7 @@ class MyAppBodyState extends State<MyAppBody> {
           "Failed to decrypt saved accounts.\n\n"
               "Your HWID may have changed (hardware replaced, OS reinstalled).\n"
               "You will need to log in again.",
-          () => Navigator.pop(context),
+              () => Navigator.pop(context),
         );
       });
     }
@@ -240,13 +248,13 @@ class MyAppBodyState extends State<MyAppBody> {
   Widget build(BuildContext context) {
     return isLoading
         ? Column(
-            children: [
-              drawTitleCustomBar(),
-              Expanded(
-                child: Center(child: Image.asset('assets/morpheus-animated.gif', width: 96)),
-              ),
-            ],
-          )
+      children: [
+        drawTitleCustomBar(),
+        Expanded(
+          child: Center(child: Image.asset('assets/morpheus-animated.gif', width: 96)),
+        ),
+      ],
+    )
         : const MainPage();
   }
 }

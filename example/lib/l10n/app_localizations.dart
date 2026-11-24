@@ -106,6 +106,18 @@ abstract class AppLocalizations {
     Locale('pl')
   ];
 
+  /// No description provided for @settings_language.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get settings_language;
+
+  /// No description provided for @settings_language_system.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get settings_language_system;
+
   /// No description provided for @generic_error_msg.
   ///
   /// In en, this message translates to:
@@ -505,7 +517,7 @@ abstract class AppLocalizations {
   /// No description provided for @settings_modpack_downloads.
   ///
   /// In en, this message translates to:
-  /// **'Simultaneous downloads per modpack'**
+  /// **'Simultaneous resource downloads'**
   String get settings_modpack_downloads;
 
   /// No description provided for @settings_console_switch.

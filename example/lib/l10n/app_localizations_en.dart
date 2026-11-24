@@ -9,6 +9,12 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get settings_language => 'Language';
+
+  @override
+  String get settings_language_system => 'System';
+
+  @override
   String get generic_error_msg => 'An error occurred';
 
   @override
@@ -217,7 +223,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settings_misc_label => 'Miscellaneous';
 
   @override
-  String get settings_modpack_downloads => 'Simultaneous downloads per modpack';
+  String get settings_modpack_downloads => 'Simultaneous resource downloads';
 
   @override
   String get settings_console_switch => 'Show console on game start';

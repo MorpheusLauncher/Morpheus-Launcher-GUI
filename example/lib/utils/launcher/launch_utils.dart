@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:morpheus_launcher_gui/globals.dart';
 import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/launch_policy.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/parallel_downloads.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/version_utils.dart';
 import 'package:morpheus_launcher_gui/utils/widget_utils.dart';
 import 'package:morpheus_launcher_gui/views/main_page.dart';
@@ -50,6 +51,7 @@ class LaunchUtils {
 
       // Costruisci args di lancio
       final args = buildLaunchArguments(config, gameDirectory: gameDirectory);
+      final environment = {'DOWNLOAD_THREADS': ModpackDownloadSettings.limit.toString()};
 
       final Process process;
 
@@ -62,21 +64,13 @@ class LaunchUtils {
           // Si usa `exec` così java rimpiazza la shell: process.kill() colpisce java e non solo sh
           final javaDir = javaPath.substring(0, lastSlashIndex);
           final javaArgs = args.map(_escapeShellArg).join(' ');
-          process = await Process.start('sh', ['-c', "cd '${javaDir.replaceAll("'", "'\\''")}' && exec ./java $javaArgs"]);
+          process = await Process.start('sh', ['-c', "cd '${javaDir.replaceAll("'", "'\\''")}' && exec ./java $javaArgs"], environment: environment);
         } else {
-          process = await Process.start(
-            javaPath,
-            args,
-            workingDirectory: gameDirectory ?? Globals.gamefoldercontroller.text,
-          );
+          process = await Process.start(javaPath, args, environment: environment, workingDirectory: gameDirectory ?? Globals.gamefoldercontroller.text);
         }
       } else {
         // Su Windows e MacOS usiamo il lancio normale
-        process = await Process.start(
-          Globals.javapathcontroller.text,
-          args,
-          workingDirectory: gameDirectory ?? Globals.gamefoldercontroller.text,
-        );
+        process = await Process.start(Globals.javapathcontroller.text, args, environment: environment, workingDirectory: gameDirectory ?? Globals.gamefoldercontroller.text);
       }
 
       // Gestione console

@@ -1,5 +1,7 @@
 {
   "@@locale": "it",
+  "settings_language": "Lingua",
+  "settings_language_system": "Sistema",
 
   "generic_error_msg": "Si è verificato un errore",
   "generic_cancel": "Annulla",
@@ -78,7 +80,7 @@
   "settings_appearance_label": "Aspetto",
   "settings_theme": "Tema del launcher",
   "settings_misc_label": "Varie",
-  "settings_modpack_downloads": "Download simultanei per modpack",
+  "settings_modpack_downloads": "Download simultanei delle risorse",
   "settings_console_switch": "Mostra la console all'avvio del gioco",
   "settings_custom_folder_title": "Cartella di gioco personalizzata",
   "settings_custom_folder": "Cartella del gioco",
