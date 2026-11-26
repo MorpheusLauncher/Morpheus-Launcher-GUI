@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ModpackDownloadSettings {
   static const _key = 'modpackDownloadConcurrency';
-  static const defaultLimit = 10;
+  static const defaultLimit = 8;
   static const maxLimit = 32;
   static int _limit = defaultLimit;
 

@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:morpheus_launcher_gui/globals.dart';
 import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
 import 'package:morpheus_launcher_gui/utils/glass_morphism.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/ftb_compatibility.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/modpack_browser_source.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/modpacks/ftb/ftb_compatibility.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/modpacks/modpack_browser_source.dart';
 import 'package:morpheus_launcher_gui/utils/widget_utils.dart';
 
 class ModpackBrowserView extends StatefulWidget {

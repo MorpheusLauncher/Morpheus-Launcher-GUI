@@ -9,6 +9,26 @@ class AppLocalizationsPl extends AppLocalizations {
   AppLocalizationsPl([String locale = 'pl']) : super(locale);
 
   @override
+  String get offline_title => 'Po??czenie niezweryfikowane';
+
+  @override
+  String get offline_message =>
+      'Nie uda?o si? sprawdzi? po??czenia z Internetem. Kontynuuj offline lub spr?buj ponownie.';
+
+  @override
+  String get offline_retry_failed =>
+      'Nadal nie mo?na sprawdzi? po??czenia. Kontynuuj offline lub spr?buj ponownie.';
+
+  @override
+  String get offline_continue => 'Kontynuuj offline';
+
+  @override
+  String get offline_retry => 'Pon?w';
+
+  @override
+  String get offline_checking => 'Sprawdzanie?';
+
+  @override
   String get settings_language => 'Język';
 
   @override
@@ -28,7 +48,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get home_news_empty_msg =>
-      'Nie można pobrać dziennika zmian Minecrafta od Mojangu. Proszę zezwolić na dostęp temu programowi przez zaporę ogniową';
+      'Aktualno?ci Minecraft s? obecnie niedost?pne.';
 
   @override
   String get morpheus_products_empty => 'Nie można pobrać produktów morpheus';
@@ -276,6 +296,14 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get account_empty_msg =>
       'Przed rozpoczęciem gry w Minecrafta należy dodać konto SP lub premium';
+
+  @override
+  String get account_skin_no_account =>
+      'Dodaj lub wybierz konto premium przed zmianą skórki.';
+
+  @override
+  String get account_skin_elyby_message =>
+      'Aby zmienić skórkę, skorzystaj ze strony Ely.by.';
 
   @override
   String get account_add_button => 'Dodaj konto';

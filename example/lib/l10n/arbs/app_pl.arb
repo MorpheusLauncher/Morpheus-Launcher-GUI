@@ -1,4 +1,10 @@
 {
+  "offline_title": "Po??czenie niezweryfikowane",
+  "offline_message": "Nie uda?o si? sprawdzi? po??czenia z Internetem. Kontynuuj offline lub spr?buj ponownie.",
+  "offline_retry_failed": "Nadal nie mo?na sprawdzi? po??czenia. Kontynuuj offline lub spr?buj ponownie.",
+  "offline_continue": "Kontynuuj offline",
+  "offline_retry": "Pon?w",
+  "offline_checking": "Sprawdzanie?",
   "@@locale": "pl",
   "settings_language": "Język",
   "settings_language_system": "System",
@@ -8,7 +14,7 @@
 
   "home_favourite_title": "Ulubione wersje",
   "home_news_title": "Dziennik zmian",
-  "home_news_empty_msg": "Nie można pobrać dziennika zmian Minecrafta od Mojangu. Proszę zezwolić na dostęp temu programowi przez zaporę ogniową",
+  "home_news_empty_msg": "Aktualno?ci Minecraft s? obecnie niedost?pne.",
 
   "morpheus_products_empty": "Nie można pobrać produktów morpheus",
   "morpheus_hero_title": "Zagraj z klientem Morpheus",
@@ -100,6 +106,8 @@
   "account_skin_buy_game": "kup Minecraft",
   "account_skin_error_msg": "Zmiana skórki możliwa tylko dla kont premium. Rozważ zakup Minecraft Java Edition na minecraft.net",
   "account_empty_msg": "Przed rozpoczęciem gry w Minecrafta należy dodać konto SP lub premium",
+  "account_skin_no_account": "Dodaj lub wybierz konto premium przed zmianą skórki.",
+  "account_skin_elyby_message": "Aby zmienić skórkę, skorzystaj ze strony Ely.by.",
   "account_add_button": "Dodaj konto",
   "account_add_type": "Jaki rodzaj konta chcesz dodać?",
   "account_add_premium": "Połącz konto Premium",

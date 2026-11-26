@@ -150,6 +150,8 @@ class _MinecraftSkinViewerState extends State<MinecraftSkinViewer> with SingleTi
     if (provider is AssetImage) {
       final data = await rootBundle.load(provider.assetName);
       bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+    } else if (provider is CachedNetworkImageProvider && client == null) {
+      bytes = await SkinUtils.loadCachedTexture(provider.url);
     } else if (provider is NetworkImage || provider is CachedNetworkImageProvider) {
       final httpClient = client ?? http.Client();
       try {
@@ -325,41 +327,28 @@ class _SkinPainter extends CustomPainter {
       width: armWidth,
       height: 12,
       depth: 4,
-      u: modern ? 32 : 40,
-      v: modern ? 48 : 16,
-      outerU: modern ? 48 : null,
-      outerV: modern ? 48 : null,
+      u: 40,
+      v: 16,
+      outerU: modern ? 40 : null,
+      outerV: modern ? 32 : null,
       pivot: const _Point3(-5, -6, 0),
       angle: -swing,
-      mirror: !modern,
     );
     part(
       center: _Point3(4 + armWidth / 2, -2, 0),
       width: armWidth,
       height: 12,
       depth: 4,
-      u: 40,
-      v: 16,
-      outerU: modern ? 40 : null,
-      outerV: modern ? 32 : null,
-      pivot: const _Point3(5, -6, 0),
-      angle: swing,
-    );
-    part(
-      center: const _Point3(-2, 10, 0),
-      width: 4,
-      height: 12,
-      depth: 4,
-      u: modern ? 16 : 0,
+      u: modern ? 32 : 40,
       v: modern ? 48 : 16,
-      outerU: modern ? 0 : null,
+      outerU: modern ? 48 : null,
       outerV: modern ? 48 : null,
-      pivot: const _Point3(-2, 4, 0),
+      pivot: const _Point3(5, -6, 0),
       angle: swing,
       mirror: !modern,
     );
     part(
-      center: const _Point3(2, 10, 0),
+      center: const _Point3(-2, 10, 0),
       width: 4,
       height: 12,
       depth: 4,
@@ -367,8 +356,21 @@ class _SkinPainter extends CustomPainter {
       v: 16,
       outerU: modern ? 0 : null,
       outerV: modern ? 32 : null,
+      pivot: const _Point3(-2, 4, 0),
+      angle: swing,
+    );
+    part(
+      center: const _Point3(2, 10, 0),
+      width: 4,
+      height: 12,
+      depth: 4,
+      u: modern ? 16 : 0,
+      v: modern ? 48 : 16,
+      outerU: modern ? 0 : null,
+      outerV: modern ? 48 : null,
       pivot: const _Point3(2, 4, 0),
       angle: -swing,
+      mirror: !modern,
     );
     final capeTexture = cape;
     if (capeTexture != null) {

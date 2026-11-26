@@ -1,4 +1,10 @@
 {
+  "offline_title": "Verbindung nicht ?berpr?ft",
+  "offline_message": "Die Internetverbindung konnte nicht ?berpr?ft werden. Fahre offline fort oder versuche es erneut.",
+  "offline_retry_failed": "Die Verbindung konnte weiterhin nicht ?berpr?ft werden. Fahre offline fort oder versuche es erneut.",
+  "offline_continue": "Offline fortfahren",
+  "offline_retry": "Erneut versuchen",
+  "offline_checking": "?berpr?fung l?uft?",
   "@@locale": "de",
   "settings_language": "Sprache",
   "settings_language_system": "System",
@@ -8,7 +14,7 @@
 
   "home_favourite_title": "Favorisierte Versionen",
   "home_news_title": "Änderungsprotokoll",
-  "home_news_empty_msg": "Kann das Minecraft-Änderungsprotokoll von Mojang nicht abrufen. Bitte erlauben Sie diesem Programm den Zugriff durch Ihre Firewall",
+  "home_news_empty_msg": "Minecraft-Neuigkeiten sind derzeit nicht verf?gbar.",
 
   "morpheus_products_empty": "Produkte von morpheus konnten nicht abgerufen werden",
   "morpheus_hero_title": "Spiele mit dem Morpheus-Client",
@@ -100,6 +106,8 @@
   "account_skin_buy_game": "Minecraft kaufen",
   "account_skin_error_msg": "Nur Premium-Konten können den Skin ändern. Erwägen Sie den Kauf von Minecraft Java Edition auf minecraft.net",
   "account_empty_msg": "Bevor Sie Minecraft spielen können, sollten Sie ein SP- oder Premium-Konto hinzufügen",
+  "account_skin_no_account": "Füge ein Premium-Konto hinzu oder wähle eines aus, bevor du den Skin änderst.",
+  "account_skin_elyby_message": "Um deinen Skin zu ändern, verwende die Ely.by-Website.",
   "account_add_button": "Konto hinzufügen",
   "account_add_type": "Welchen Kontotyp möchten Sie hinzufügen?",
   "account_add_premium": "Verbinde einen Premium-Account",

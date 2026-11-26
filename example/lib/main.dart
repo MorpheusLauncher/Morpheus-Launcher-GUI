@@ -7,9 +7,10 @@ import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:morpheus_launcher_gui/globals.dart';
 import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
 import 'package:morpheus_launcher_gui/utils/language_settings.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/news_utils.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/parallel_downloads.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/version_utils.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/news/news_utils.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/network/connectivity_check.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/downloads/parallel_downloads.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/versions/version_utils.dart';
 import 'package:morpheus_launcher_gui/utils/widget_utils.dart';
 import 'package:morpheus_launcher_gui/views/main_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -224,16 +225,50 @@ class MyAppBodyState extends State<MyAppBody> {
       Window.overrideMacOSBrightness(dark: Globals.darkModeTheme);
     }
 
+    final localFailures = <String>[];
+    final connectivity = ConnectivityCheck.check();
+    try {
+      Globals.pinnedVersions = await VersionUtils.getPinnedVersions();
+    } catch (e) {
+      debugPrint('Failed to load pinned versions: $e');
+      localFailures.add('Pinned versions');
+    }
+    final connected = await connectivity;
+    if (connected) {
+      localFailures.addAll(await _loadOnlineResources());
+    }
+    if (!mounted) return;
+    setState(() => isLoading = false);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      if (accountLoadFailed) {
+        await ErrorDialog.show(
+          context,
+          code: 'ACCOUNT-READ',
+          operation: 'Could not read saved accounts. The original file has been preserved and saving accounts is disabled until the launcher is restarted.',
+        );
+      }
+      if (!mounted) return;
+      if (localFailures.isNotEmpty) {
+        await ErrorDialog.show(context, code: 'STARTUP-CATALOGS', operation: 'Some launcher data could not be loaded.', details: 'Unavailable: ${localFailures.join(', ')}');
+      }
+      if (!mounted || connected) return;
+      final loadOnline = await _showOfflineDialog();
+      if (!mounted || !loadOnline) return;
+      setState(() => isLoading = true);
+      final failures = await _loadOnlineResources();
+      if (!mounted) return;
+      setState(() => isLoading = false);
+      if (failures.isNotEmpty) {
+        await ErrorDialog.show(context, code: 'STARTUP-CATALOGS', operation: 'Some launcher data could not be loaded.', details: 'Unavailable: ${failures.join(', ')}');
+      }
+    });
+  }
+
+  Future<List<String>> _loadOnlineResources() async {
     final startupFailures = <String>[];
     await Future.wait([
-      (() async {
-        try {
-          Globals.pinnedVersions = await VersionUtils.getPinnedVersions();
-        } catch (e) {
-          debugPrint('Failed to load pinned versions: $e');
-          startupFailures.add('Pinned versions');
-        }
-      })(),
       (() async {
         try {
           await NewsUtils.getNews();
@@ -299,26 +334,48 @@ class MyAppBodyState extends State<MyAppBody> {
         }
       })(),
     ]);
+    VersionUtils.clearVersionCache();
+    return startupFailures;
+  }
 
-    isLoading = false;
-
-    setState(() => effect = effect);
-
-    if (accountLoadFailed) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        ErrorDialog.show(
-          context,
-          code: 'ACCOUNT-READ',
-          operation: 'Could not read saved accounts. The original file has been preserved and saving accounts is disabled until the launcher is restarted.',
-        );
-      });
-    } else if (startupFailures.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        ErrorDialog.show(context, code: 'STARTUP-CATALOGS', operation: 'Some launcher data could not be loaded.', details: 'Unavailable: ${startupFailures.join(', ')}');
-      });
-    }
+  Future<bool> _showOfflineDialog() async {
+    var checking = false;
+    var failedAgain = false;
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, updateDialog) {
+          final strings = AppLocalizations.of(dialogContext)!;
+          return AlertDialog(
+            title: Text(strings.offline_title),
+            content: Text(failedAgain ? strings.offline_retry_failed : strings.offline_message),
+            actions: [
+              TextButton(
+                onPressed: checking ? null : () => Navigator.pop(dialogContext, false),
+                child: Text(strings.offline_continue),
+              ),
+              TextButton(
+                onPressed: checking ? null : () async {
+                  updateDialog(() => checking = true);
+                  final connected = await ConnectivityCheck.check();
+                  if (!dialogContext.mounted) return;
+                  if (connected) {
+                    Navigator.pop(dialogContext, true);
+                  } else {
+                    updateDialog(() {
+                      checking = false;
+                      failedAgain = true;
+                    });
+                  }
+                },
+                child: Text(checking ? strings.offline_checking : strings.offline_retry),
+              ),
+            ],
+          );
+        },
+      ),
+    ) ?? false;
   }
 
   @override

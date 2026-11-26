@@ -4,10 +4,10 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:http/http.dart' as http;
 import 'package:morpheus_launcher_gui/globals.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/file_downloader.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/modpack_detail_source.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/modpack_installations.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/parallel_downloads.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/downloads/file_downloader.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/modpacks/modpack_detail_source.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/modpacks/modpack_installations.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/downloads/parallel_downloads.dart';
 
 /// Manages Modrinth modpack instances under:
 ///   .morpheus/modrinth-packs/<slug>/

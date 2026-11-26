@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/modpack_browser_source.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/modpack_detail_source.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/modpacks/modpack_browser_source.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/modpacks/modpack_detail_source.dart';
 import 'package:morpheus_launcher_gui/views/modpacks/common/modpack_browser_view.dart';
 import 'package:morpheus_launcher_gui/views/modpacks/common/modpack_detail_view.dart';
 

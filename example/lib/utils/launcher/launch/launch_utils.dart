@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:morpheus_launcher_gui/globals.dart';
 import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
 import 'package:morpheus_launcher_gui/utils/error_dialog.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/launch_policy.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/parallel_downloads.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/version_utils.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/launch/launch_policy.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/downloads/parallel_downloads.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/versions/version_utils.dart';
 import 'package:morpheus_launcher_gui/utils/widget_utils.dart';
 import 'package:morpheus_launcher_gui/views/main_page.dart';
 
-export 'package:morpheus_launcher_gui/utils/launcher/launch_policy.dart' show LaunchConfig, LaunchPolicy, ModLoader, LaunchProfile;
+export 'package:morpheus_launcher_gui/utils/launcher/launch/launch_policy.dart' show LaunchConfig, LaunchPolicy, ModLoader, LaunchProfile;
 
 class LaunchUtils {
   /// Lancia Minecraft con i parametri di LaunchConfig

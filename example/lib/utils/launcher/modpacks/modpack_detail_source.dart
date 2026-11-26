@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:morpheus_launcher_gui/globals.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/ftb_compatibility.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/modpacks/ftb/ftb_compatibility.dart';
 
 class ModpackVersion {
   final String id;

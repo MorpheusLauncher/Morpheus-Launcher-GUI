@@ -9,6 +9,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:morpheus_launcher_gui/account/account_utils.dart';
 import 'package:morpheus_launcher_gui/globals.dart';
 import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
+import 'package:morpheus_launcher_gui/utils/skinmodel/skin_utils.dart';
 
 Future<String> doMicrosoftConsent(dynamic context) async {
   var response = await http.post(
@@ -211,6 +212,11 @@ Future<String> uploadSkin(dynamic context, String variant, Account account, Stri
   final response = await request.send();
 
   if (response.statusCode == 200) {
+    try {
+      await SkinUtils.invalidateSkin(account);
+    } catch (_) {
+      // A cache failure must not turn a successful skin upload into an error.
+    }
     return AppLocalizations.of(context)!.account_skin_success;
   } else {
     return "[MC]: ${AppLocalizations.of(context)!.account_post_fail}: ${response.statusCode} ${response.reasonPhrase}";

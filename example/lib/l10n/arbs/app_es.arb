@@ -1,4 +1,10 @@
 {
+  "offline_title": "Conexi?n no verificada",
+  "offline_message": "No se pudo verificar la conexi?n a Internet. Contin?a sin conexi?n o vuelve a intentarlo.",
+  "offline_retry_failed": "La conexi?n sigue sin verificarse. Contin?a sin conexi?n o vuelve a intentarlo.",
+  "offline_continue": "Continuar sin conexi?n",
+  "offline_retry": "Reintentar",
+  "offline_checking": "Comprobando?",
   "@@locale": "es",
   "settings_language": "Idioma",
   "settings_language_system": "Sistema",
@@ -8,7 +14,7 @@
 
   "home_favourite_title": "Versiones Favoritas",
   "home_news_title": "Registro de cambios",
-  "home_news_empty_msg": "No se puede recuperar el registro de cambios de Mojang, por favor permite este programa en tu firewall",
+  "home_news_empty_msg": "Las noticias de Minecraft no est?n disponibles en este momento.",
 
   "morpheus_products_empty": "No se pueden recuperar los productos morpheus",
   "morpheus_hero_title": "Juega con el cliente Morpheus",
@@ -100,6 +106,8 @@
   "account_skin_buy_game": "Comprar Minecraft",
   "account_skin_error_msg": "Solo las cuentas premium pueden cambiar la skin.\nConsidera comprar el juego a través de minecraft.net",
   "account_empty_msg": "Antes de poder jugar a Minecraft, debes agregar una cuenta de un solo jugador o premium",
+  "account_skin_no_account": "Añade o selecciona una cuenta premium antes de cambiar su skin.",
+  "account_skin_elyby_message": "Para cambiar tu skin, usa el sitio web de Ely.by.",
   "account_add_button": "Agregar cuenta",
   "account_add_type": "¿Qué tipo de cuenta quieres agregar?",
   "account_add_premium": "Conecta una cuenta Premium",

@@ -3,11 +3,11 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:morpheus_launcher_gui/globals.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/file_downloader.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/ftb_compatibility.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/ftb_manifest.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/modpack_installations.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/parallel_downloads.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/downloads/file_downloader.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/modpacks/ftb/ftb_compatibility.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/modpacks/ftb/ftb_manifest.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/modpacks/modpack_installations.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/downloads/parallel_downloads.dart';
 import 'package:path/path.dart' as p;
 
 class FtbUtils {

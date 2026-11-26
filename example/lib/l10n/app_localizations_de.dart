@@ -9,6 +9,26 @@ class AppLocalizationsDe extends AppLocalizations {
   AppLocalizationsDe([String locale = 'de']) : super(locale);
 
   @override
+  String get offline_title => 'Verbindung nicht ?berpr?ft';
+
+  @override
+  String get offline_message =>
+      'Die Internetverbindung konnte nicht ?berpr?ft werden. Fahre offline fort oder versuche es erneut.';
+
+  @override
+  String get offline_retry_failed =>
+      'Die Verbindung konnte weiterhin nicht ?berpr?ft werden. Fahre offline fort oder versuche es erneut.';
+
+  @override
+  String get offline_continue => 'Offline fortfahren';
+
+  @override
+  String get offline_retry => 'Erneut versuchen';
+
+  @override
+  String get offline_checking => '?berpr?fung l?uft?';
+
+  @override
   String get settings_language => 'Sprache';
 
   @override
@@ -28,7 +48,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get home_news_empty_msg =>
-      'Kann das Minecraft-Änderungsprotokoll von Mojang nicht abrufen. Bitte erlauben Sie diesem Programm den Zugriff durch Ihre Firewall';
+      'Minecraft-Neuigkeiten sind derzeit nicht verf?gbar.';
 
   @override
   String get morpheus_products_empty =>
@@ -280,6 +300,14 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get account_empty_msg =>
       'Bevor Sie Minecraft spielen können, sollten Sie ein SP- oder Premium-Konto hinzufügen';
+
+  @override
+  String get account_skin_no_account =>
+      'Füge ein Premium-Konto hinzu oder wähle eines aus, bevor du den Skin änderst.';
+
+  @override
+  String get account_skin_elyby_message =>
+      'Um deinen Skin zu ändern, verwende die Ely.by-Website.';
 
   @override
   String get account_add_button => 'Konto hinzufügen';

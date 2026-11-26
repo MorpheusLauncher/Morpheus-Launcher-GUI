@@ -7,11 +7,11 @@ import 'package:http/http.dart' as http;
 import 'package:morpheus_launcher_gui/globals.dart';
 import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
 import 'package:morpheus_launcher_gui/utils/error_dialog.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/ftb_utils.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/launch_utils.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/modpack_detail_source.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/modpack_installations.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/modrinth_utils.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/modpacks/ftb/ftb_utils.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/launch/launch_utils.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/modpacks/modpack_detail_source.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/modpacks/modpack_installations.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/modpacks/modrinth_utils.dart';
 import 'package:morpheus_launcher_gui/utils/widget_utils.dart';
 
 import '../../../utils/markdown/flutter_markdown_plus.dart';

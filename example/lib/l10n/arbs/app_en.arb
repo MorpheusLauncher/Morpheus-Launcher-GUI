@@ -1,4 +1,10 @@
 {
+  "offline_title": "Connection not verified",
+  "offline_message": "The launcher could not verify your internet connection. Continue offline or retry.",
+  "offline_retry_failed": "Connection still not verified. Continue offline or retry.",
+  "offline_continue": "Continue offline",
+  "offline_retry": "Retry",
+  "offline_checking": "Checking?",
   "@@locale": "en",
   "settings_language": "Language",
   "settings_language_system": "System",
@@ -8,7 +14,7 @@
 
   "home_favourite_title": "Pinned Versions",
   "home_news_title": "Changelog",
-  "home_news_empty_msg": "Cannot fetch minecraft changelog from mojang, please allow this program through your firewall",
+  "home_news_empty_msg": "Minecraft news is currently unavailable.",
 
   "morpheus_products_empty": "Unable to fetch morpheus products",
   "morpheus_hero_title": "Play with the Morpheus client",
@@ -107,6 +113,8 @@
   "account_skin_buy_game": "buy minecraft",
   "account_skin_error_msg": "Only premium accounts can change skin.\nConsider buying minecraft java edition at minecraft.net",
   "account_empty_msg": "Before you can play minecraft, you should add an SP or Premium account",
+  "account_skin_no_account": "Add or select a premium account before changing its skin.",
+  "account_skin_elyby_message": "To change your skin, use the Ely.by website.",
   "account_add_button": "Add account",
   "account_add_type": "What type of account do you want to add?",
   "account_add_premium": "Link a Premium account",

@@ -9,6 +9,26 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get offline_title => 'Connection not verified';
+
+  @override
+  String get offline_message =>
+      'The launcher could not verify your internet connection. Continue offline or retry.';
+
+  @override
+  String get offline_retry_failed =>
+      'Connection still not verified. Continue offline or retry.';
+
+  @override
+  String get offline_continue => 'Continue offline';
+
+  @override
+  String get offline_retry => 'Retry';
+
+  @override
+  String get offline_checking => 'Checking?';
+
+  @override
   String get settings_language => 'Language';
 
   @override
@@ -27,8 +47,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get home_news_title => 'Changelog';
 
   @override
-  String get home_news_empty_msg =>
-      'Cannot fetch minecraft changelog from mojang, please allow this program through your firewall';
+  String get home_news_empty_msg => 'Minecraft news is currently unavailable.';
 
   @override
   String get morpheus_products_empty => 'Unable to fetch morpheus products';
@@ -275,6 +294,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get account_empty_msg =>
       'Before you can play minecraft, you should add an SP or Premium account';
+
+  @override
+  String get account_skin_no_account =>
+      'Add or select a premium account before changing its skin.';
+
+  @override
+  String get account_skin_elyby_message =>
+      'To change your skin, use the Ely.by website.';
 
   @override
   String get account_add_button => 'Add account';

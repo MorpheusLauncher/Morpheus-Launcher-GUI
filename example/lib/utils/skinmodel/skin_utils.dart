@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
 import 'package:morpheus_launcher_gui/account/account_utils.dart';
@@ -11,25 +12,47 @@ import 'package:morpheus_launcher_gui/globals.dart';
 import 'package:morpheus_launcher_gui/utils/skinmodel/skin_viewer.dart';
 
 class SkinUtils {
-  static Future<Uint8List> loadCroppedSkin() async {
-    final account = Globals.getAccount();
+  static final cacheRevision = ValueNotifier<int>(0);
+
+  /// Reads the shared image cache, retaining stale data when offline.
+  static Future<Uint8List> loadCachedTexture(String url) async {
+    final cache = DefaultCacheManager();
+    try {
+      return await (await cache.getSingleFile(url).timeout(const Duration(seconds: 8))).readAsBytes();
+    } catch (_) {
+      final cached = await cache.getFileFromCache(url);
+      if (cached == null) rethrow;
+      return cached.file.readAsBytes();
+    }
+  }
+
+  static Future<void> invalidateSkin(Account account) async {
     final provider = buildSkinModelImageProvider(account: account);
-    Uint8List rawSkin;
+    if (provider is CachedNetworkImageProvider) {
+      await DefaultCacheManager().removeFile(provider.url);
+      await provider.evict();
+    }
+    cacheRevision.value++;
+  }
+
+  static Future<Uint8List> loadSkinBytes(Account? account) async {
+    final provider = buildSkinModelImageProvider(account: account);
     if (provider is CachedNetworkImageProvider) {
       try {
-        final response = await http.get(Uri.parse(provider.url)).timeout(const Duration(seconds: 8));
-        if (response.statusCode != 200) throw StateError('Skin unavailable (${response.statusCode})');
-        rawSkin = response.bodyBytes;
+        return await loadCachedTexture(provider.url);
       } catch (_) {
         final fallback = await rootBundle.load(account?.isSlimSkin == true ? 'assets/alex-raw.png' : 'assets/steve-raw.png');
-        rawSkin = fallback.buffer.asUint8List(fallback.offsetInBytes, fallback.lengthInBytes);
+        return fallback.buffer.asUint8List(fallback.offsetInBytes, fallback.lengthInBytes);
       }
     } else if (provider is AssetImage) {
       final data = await rootBundle.load(provider.assetName);
-      rawSkin = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
-    } else {
-      rawSkin = await ThreeDimensionalViewer.getImageBytes(provider);
+      return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
     }
+    return ThreeDimensionalViewer.getImageBytes(provider);
+  }
+
+  static Future<Uint8List> loadCroppedSkin() async {
+    final rawSkin = await loadSkinBytes(Globals.getAccount());
     final img.Image? original = img.decodeImage(rawSkin);
     if (original == null) return rawSkin;
     final cropped = img.copyCrop(original, x: 8, y: 8, width: 8, height: 8);

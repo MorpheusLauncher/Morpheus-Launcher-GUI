@@ -1,4 +1,10 @@
 {
+  "offline_title": "Connessione non verificata",
+  "offline_message": "Il launcher non riesce a verificare la connessione a Internet. Puoi continuare offline o riprovare.",
+  "offline_retry_failed": "Connessione ancora non verificata. Puoi continuare offline o riprovare.",
+  "offline_continue": "Continua offline",
+  "offline_retry": "Riprova",
+  "offline_checking": "Verifica in corso?",
   "@@locale": "it",
   "settings_language": "Lingua",
   "settings_language_system": "Sistema",
@@ -8,7 +14,7 @@
 
   "home_favourite_title": "Versioni Preferite",
   "home_news_title": "Changelog",
-  "home_news_empty_msg": "Impossibile recuperare il changelog da mojang, perfavore consenti questo programma nel tuo firewall",
+  "home_news_empty_msg": "Le novit? di Minecraft non sono al momento disponibili.",
 
   "morpheus_products_empty": "Impossibile recuperare i prodotti morpheus",
   "morpheus_hero_title": "Gioca con il client Morpheus",
@@ -100,6 +106,8 @@
   "account_skin_buy_game": "Acquista Minecraft",
   "account_skin_error_msg": "Solo gli account premium possono cambiare la skin.\nConsidera di comprare il gioco tramite minecraft.net",
   "account_empty_msg": "Prima di poter giocare a minecraft, devi aggiungere un account SP o Premium",
+  "account_skin_no_account": "Aggiungi o seleziona un account premium prima di cambiarne la skin.",
+  "account_skin_elyby_message": "Per cambiare la skin, usa il sito di Ely.by.",
   "account_add_button": "Aggiungi account",
   "account_add_type": "Che tipo di account vuoi aggiungere?",
   "account_add_premium": "Collega un account Premium",

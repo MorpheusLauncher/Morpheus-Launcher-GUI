@@ -9,6 +9,26 @@ class AppLocalizationsEs extends AppLocalizations {
   AppLocalizationsEs([String locale = 'es']) : super(locale);
 
   @override
+  String get offline_title => 'Conexi?n no verificada';
+
+  @override
+  String get offline_message =>
+      'No se pudo verificar la conexi?n a Internet. Contin?a sin conexi?n o vuelve a intentarlo.';
+
+  @override
+  String get offline_retry_failed =>
+      'La conexi?n sigue sin verificarse. Contin?a sin conexi?n o vuelve a intentarlo.';
+
+  @override
+  String get offline_continue => 'Continuar sin conexi?n';
+
+  @override
+  String get offline_retry => 'Reintentar';
+
+  @override
+  String get offline_checking => 'Comprobando?';
+
+  @override
   String get settings_language => 'Idioma';
 
   @override
@@ -28,7 +48,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get home_news_empty_msg =>
-      'No se puede recuperar el registro de cambios de Mojang, por favor permite este programa en tu firewall';
+      'Las noticias de Minecraft no est?n disponibles en este momento.';
 
   @override
   String get morpheus_products_empty =>
@@ -279,6 +299,14 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get account_empty_msg =>
       'Antes de poder jugar a Minecraft, debes agregar una cuenta de un solo jugador o premium';
+
+  @override
+  String get account_skin_no_account =>
+      'Añade o selecciona una cuenta premium antes de cambiar su skin.';
+
+  @override
+  String get account_skin_elyby_message =>
+      'Para cambiar tu skin, usa el sitio web de Ely.by.';
 
   @override
   String get account_add_button => 'Agregar cuenta';

@@ -5,7 +5,7 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
-import 'package:morpheus_launcher_gui/utils/launcher/modpack_installations.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/modpacks/modpack_installations.dart';
 import 'package:path/path.dart' as p;
 
 class _DigestSink implements Sink<Digest> {

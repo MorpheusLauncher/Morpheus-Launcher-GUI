@@ -19,15 +19,17 @@ import 'package:morpheus_launcher_gui/main.dart';
 import 'package:morpheus_launcher_gui/utils/circle_utils.dart';
 import 'package:morpheus_launcher_gui/utils/error_dialog.dart';
 import 'package:morpheus_launcher_gui/utils/language_settings.dart';
-import 'package:morpheus_launcher_gui/utils/launcher//version_utils.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/ftb_utils.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/launch_utils.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/modpack_installations.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/modrinth_utils.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/parallel_downloads.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/versions/version_utils.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/versions/fabric_versions.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/modpacks/ftb/ftb_utils.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/launch/launch_utils.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/modpacks/modpack_installations.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/modpacks/modrinth_utils.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/downloads/parallel_downloads.dart';
 import 'package:morpheus_launcher_gui/utils/morpheus_icons_icons.dart';
 import 'package:morpheus_launcher_gui/utils/skinmodel/skin_utils.dart';
 import 'package:morpheus_launcher_gui/utils/skinmodel/skin_viewer.dart';
+import 'package:morpheus_launcher_gui/utils/skinmodel/isometric_head.dart';
 import 'package:morpheus_launcher_gui/utils/widget_utils.dart';
 import 'package:morpheus_launcher_gui/views/modpacks/common/modpack_tile.dart';
 import 'package:morpheus_launcher_gui/views/modpacks/feedthebeast_view.dart';
@@ -51,12 +53,14 @@ class _MainPageState extends State<MainPage> {
   void initState() {
     super.initState();
     ModpackInstallations.instance.addListener(_refreshInstallations);
+    SkinUtils.cacheRevision.addListener(_refreshInstallations);
     rebuild();
   }
 
   @override
   void dispose() {
     ModpackInstallations.instance.removeListener(_refreshInstallations);
+    SkinUtils.cacheRevision.removeListener(_refreshInstallations);
     _themeNotifier.dispose();
     super.dispose();
   }
@@ -1181,6 +1185,7 @@ class _MainPageState extends State<MainPage> {
   Widget buildModdedList() {
     final fabricFiltered = Globals.fabricGameVersionsResponse != null
         ? Globals.fabricGameVersionsResponse.where((v) {
+            if (!isRegularFabricGameVersion(v["version"])) return false;
             if (Globals.showOnlyReleases != true) return true;
 
             return v["stable"] == true || (v["type"] is String && v["type"].toString().toLowerCase() == "release");
@@ -1879,20 +1884,23 @@ class _MainPageState extends State<MainPage> {
         WidgetUtils.settingRow(
           icon: Icons.language,
           title: AppLocalizations.of(context)!.settings_language,
-          control: SettingPicker<String>(
-            values: const ['system', 'de', 'en', 'es', 'fr', 'it', 'pl'],
-            selected: LanguageSettings.selected.value,
-            label: (value) => switch (value) {
-              'system' => AppLocalizations.of(context)!.settings_language_system,
-              'de' => 'Deutsch',
-              'en' => 'English',
-              'es' => 'Español',
-              'fr' => 'Français',
-              'it' => 'Italiano',
-              'pl' => 'Polski',
-              _ => value,
-            },
-            onSelected: LanguageSettings.save,
+          control: ValueListenableBuilder<String>(
+            valueListenable: LanguageSettings.selected,
+            builder: (context, selected, _) => SettingPicker<String>(
+              values: const ['system', 'de', 'en', 'es', 'fr', 'it', 'pl'],
+              selected: selected,
+              label: (value) => switch (value) {
+                'system' => AppLocalizations.of(context)!.settings_language_system,
+                'de' => 'Deutsch',
+                'en' => 'English',
+                'es' => 'Español',
+                'fr' => 'Français',
+                'it' => 'Italiano',
+                'pl' => 'Polski',
+                _ => value,
+              },
+              onSelected: LanguageSettings.save,
+            ),
           ),
         ),
 
@@ -1925,7 +1933,9 @@ class _MainPageState extends State<MainPage> {
           title: AppLocalizations.of(context)!.settings_modpack_downloads,
           control: SettingPicker<int>(
             selected: ModpackDownloadSettings.limit,
-            values: List.generate(ModpackDownloadSettings.maxLimit, (i) => i + 1),
+            values: [
+              for (var value = 1; value <= ModpackDownloadSettings.maxLimit; value *= 2) value,
+            ],
             label: (value) => '$value',
             onSelected: (value) async {
               await ModpackDownloadSettings.save(value);
@@ -2306,6 +2316,8 @@ class _MainPageState extends State<MainPage> {
               () async {
                 try {
                   await DefaultCacheManager().emptyCache();
+                  imageCache.clear();
+                  SkinUtils.cacheRevision.value++;
                 } catch (e) {
                   if (mounted) {
                     await ErrorDialog.show(context, code: 'CACHE-CLEAR', operation: 'Could not clear the cache.', error: e);
@@ -2467,7 +2479,7 @@ class _MainPageState extends State<MainPage> {
           /** Mostra la skin del player a destra */
           if (Globals.getAccount() case final account?) ...[
             MinecraftSkinViewer(
-              key: ValueKey('${account.uuid}:${account.isPremium}:${account.isElyBy}'),
+              key: ValueKey('${account.uuid}:${account.isPremium}:${account.isElyBy}:${SkinUtils.cacheRevision.value}'),
               account: account,
             ),
           ],
@@ -2479,7 +2491,25 @@ class _MainPageState extends State<MainPage> {
             ColorUtils.dynamicPrimaryForegroundColor,
             ColorUtils.primaryFontColor,
             () async {
-              if (Globals.getAccount()!.isPremium) {
+              final account = Globals.getAccount();
+              if (account == null) {
+                WidgetUtils.showMessageDialog(
+                  context,
+                  AppLocalizations.of(context)!.generic_error_msg,
+                  AppLocalizations.of(context)!.account_skin_no_account,
+                  () => Navigator.pop(context),
+                );
+
+                return;
+              }
+              if (account.isElyBy) {
+                WidgetUtils.showMessageDialog(
+                  context,
+                  AppLocalizations.of(context)!.account_skin_uploader_title,
+                  AppLocalizations.of(context)!.account_skin_elyby_message,
+                  () => Navigator.pop(context),
+                );
+              } else if (account.isPremium) {
                 WidgetUtils.showPopup(
                   context,
                   AppLocalizations.of(context)!.account_skin_uploader_type_title,
@@ -2809,9 +2839,7 @@ class _MainPageState extends State<MainPage> {
             [
               for (var account in Globals.accounts)
                 buildAccountEntry(
-                  account.username,
-                  account.isPremium,
-                  account.isElyBy,
+                  account,
                   Globals.accounts.indexOf(account),
                 ),
             ],
@@ -2836,7 +2864,7 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  Widget buildAccountEntry(String username, bool premium, bool elyby, int index) {
+  Widget buildAccountEntry(Account account, int index) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(0, 4, 0, 0),
       child: SizedBox(
@@ -2852,15 +2880,12 @@ class _MainPageState extends State<MainPage> {
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Container(
+                child: SizedBox(
                   height: 40,
                   width: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    image: DecorationImage(
-                      opacity: 0.8,
-                      image: CachedNetworkImageProvider("${Urls.skinURL}/head/$username"),
-                    ),
+                  child: Opacity(
+                    opacity: 0.8,
+                    child: IsometricHead(account: account),
                   ),
                 ),
               ),
@@ -2871,13 +2896,13 @@ class _MainPageState extends State<MainPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      username,
+                      account.username,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: WidgetUtils.customTextStyle(18, FontWeight.w500, ColorUtils.primaryFontColor),
                     ),
                     Text(
-                      premium ? "Premium" : (elyby ? "ElyBy" : "Offline"),
+                      account.isPremium ? "Premium" : (account.isElyBy ? "ElyBy" : "Offline"),
                       maxLines: 1,
                       style: WidgetUtils.customTextStyle(14, FontWeight.w300, ColorUtils.secondaryFontColor),
                     ),

@@ -1,5 +1,5 @@
 import 'package:morpheus_launcher_gui/globals.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/version_utils.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/versions/version_utils.dart';
 
 enum FtbCompatibility { compatible, incompatible, unknown }
 

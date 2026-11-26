@@ -106,6 +106,42 @@ abstract class AppLocalizations {
     Locale('pl')
   ];
 
+  /// No description provided for @offline_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection not verified'**
+  String get offline_title;
+
+  /// No description provided for @offline_message.
+  ///
+  /// In en, this message translates to:
+  /// **'The launcher could not verify your internet connection. Continue offline or retry.'**
+  String get offline_message;
+
+  /// No description provided for @offline_retry_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection still not verified. Continue offline or retry.'**
+  String get offline_retry_failed;
+
+  /// No description provided for @offline_continue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue offline'**
+  String get offline_continue;
+
+  /// No description provided for @offline_retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get offline_retry;
+
+  /// No description provided for @offline_checking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking?'**
+  String get offline_checking;
+
   /// No description provided for @settings_language.
   ///
   /// In en, this message translates to:
@@ -145,7 +181,7 @@ abstract class AppLocalizations {
   /// No description provided for @home_news_empty_msg.
   ///
   /// In en, this message translates to:
-  /// **'Cannot fetch minecraft changelog from mojang, please allow this program through your firewall'**
+  /// **'Minecraft news is currently unavailable.'**
   String get home_news_empty_msg;
 
   /// No description provided for @morpheus_products_empty.
@@ -615,6 +651,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Before you can play minecraft, you should add an SP or Premium account'**
   String get account_empty_msg;
+
+  /// No description provided for @account_skin_no_account.
+  ///
+  /// In en, this message translates to:
+  /// **'Add or select a premium account before changing its skin.'**
+  String get account_skin_no_account;
+
+  /// No description provided for @account_skin_elyby_message.
+  ///
+  /// In en, this message translates to:
+  /// **'To change your skin, use the Ely.by website.'**
+  String get account_skin_elyby_message;
 
   /// No description provided for @account_add_button.
   ///
