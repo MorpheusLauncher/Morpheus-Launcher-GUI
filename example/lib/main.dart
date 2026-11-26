@@ -73,7 +73,6 @@ Future<void> _startApp() async {
     Globals.WindowThemes.add('Clear'); // for any version
     if (buildNumber! >= 7601) {
       if (buildNumber < 22000) Globals.WindowThemes.add('Aero'); // No aero for windows 11 (broke)
-      if (buildNumber >= 22523) Globals.WindowThemes.add('Mica'); // Mica only for windows 11
       if (buildNumber >= 17134) Globals.WindowThemes.add('Acrylic'); // Acrylic for windows 10+
     }
     Globals.WindowThemes.add('Material');
@@ -175,7 +174,11 @@ class MyAppBodyState extends State<MyAppBody> {
     Globals.javalaunchercontroller.text = prefs.getString('javaLauncherArgs') ?? "";
     Globals.customFolderSet = prefs.getBool('customFolderSet') ?? false;
     Globals.gamefoldercontroller.text = prefs.getString('gameFolderPath') ?? LauncherUtils.getApplicationFolder("minecraft");
-    Globals.selectedWindowTheme = prefs.getString('themeSet') ?? getDefaultTheme();
+    final savedWindowTheme = prefs.getString('themeSet');
+    Globals.selectedWindowTheme = savedWindowTheme != null && Globals.WindowThemes.contains(savedWindowTheme) ? savedWindowTheme : getDefaultTheme();
+    if (savedWindowTheme != null && savedWindowTheme != Globals.selectedWindowTheme) {
+      await prefs.setString('themeSet', Globals.selectedWindowTheme);
+    }
     Globals.showConsole = prefs.getBool('showConsole') ?? true;
     Globals.fullTransparent = prefs.getBool('fullTransparent') ?? false;
     Globals.forceClasspath = prefs.getBool('forceClasspath') ?? false;
@@ -362,9 +365,6 @@ WindowEffect getWindowEffect() {
       break;
     case 'Acrylic':
       if (Platform.isWindows && buildNumber! >= 17134 || Platform.isMacOS) return WindowEffect.acrylic;
-      break;
-    case 'Mica':
-      if (Platform.isWindows && buildNumber! >= 22000) return (!Globals.darkModeTheme && buildNumber >= 22523) ? WindowEffect.tabbed : WindowEffect.mica;
       break;
   }
 

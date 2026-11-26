@@ -1844,26 +1844,6 @@ class _MainPageState extends State<MainPage> {
           ),
         ),
 
-        WidgetUtils.settingRow(
-          icon: Icons.language,
-          title: AppLocalizations.of(context)!.settings_language,
-          control: SettingPicker<String>(
-            values: const ['system', 'de', 'en', 'es', 'fr', 'it', 'pl'],
-            selected: LanguageSettings.selected.value,
-            label: (value) => switch (value) {
-              'system' => AppLocalizations.of(context)!.settings_language_system,
-              'de' => 'Deutsch',
-              'en' => 'English',
-              'es' => 'Español',
-              'fr' => 'Français',
-              'it' => 'Italiano',
-              'pl' => 'Polski',
-              _ => value,
-            },
-            onSelected: LanguageSettings.save,
-          ),
-        ),
-
         /** Setting Tema */
         WidgetUtils.settingRow(
           icon: Icons.brush,
@@ -1893,6 +1873,26 @@ class _MainPageState extends State<MainPage> {
               }
               if (mounted) setState(() {});
             },
+          ),
+        ),
+
+        WidgetUtils.settingRow(
+          icon: Icons.language,
+          title: AppLocalizations.of(context)!.settings_language,
+          control: SettingPicker<String>(
+            values: const ['system', 'de', 'en', 'es', 'fr', 'it', 'pl'],
+            selected: LanguageSettings.selected.value,
+            label: (value) => switch (value) {
+              'system' => AppLocalizations.of(context)!.settings_language_system,
+              'de' => 'Deutsch',
+              'en' => 'English',
+              'es' => 'Español',
+              'fr' => 'Français',
+              'it' => 'Italiano',
+              'pl' => 'Polski',
+              _ => value,
+            },
+            onSelected: LanguageSettings.save,
           ),
         ),
 
