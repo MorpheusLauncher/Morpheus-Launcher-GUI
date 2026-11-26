@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:morpheus_launcher_gui/globals.dart';
 import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
+import 'package:morpheus_launcher_gui/utils/error_dialog.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/launch_policy.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/parallel_downloads.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/version_utils.dart';
@@ -13,12 +14,11 @@ export 'package:morpheus_launcher_gui/utils/launcher/launch_policy.dart' show La
 
 class LaunchUtils {
   /// Lancia Minecraft con i parametri di LaunchConfig
-  static Future<void> launchMinecraft(
-    BuildContext context,
-    LaunchConfig config, {
-    required VoidCallback onAccountRequired,
-    String? gameDirectory,
-  }) async {
+  static Future<void> launchMinecraft(BuildContext context,
+      LaunchConfig config, {
+        required VoidCallback onAccountRequired,
+        String? gameDirectory,
+      }) async {
     // Verifica account
     final account = Globals.getAccount();
     if (account == null) {
@@ -26,7 +26,7 @@ class LaunchUtils {
         context,
         AppLocalizations.of(context)!.account_required_title,
         AppLocalizations.of(context)!.account_required_msg,
-        () {
+            () {
           Navigator.pop(context);
           onAccountRequired();
         },
@@ -37,19 +37,25 @@ class LaunchUtils {
 
     WidgetUtils.showLoadingCircle(context);
     Globals.consolecontroller.clear();
-    await AccountUtils.refreshPremium(context);
-
+    var loading = true;
+    var phase = 'LAUNCH-ACCOUNT';
     try {
+      await AccountUtils.refreshPremium(context);
       // Installa Java automaticamente se necessario
       if (!Globals.javaAdvSet) {
+        phase = 'LAUNCH-JAVA';
         await LauncherUtils.JavaAutoInstall(
           config.isModded ? config.realGameVersion : config.gameVersion,
         );
       }
 
-      if (context.mounted) Navigator.pop(context);
+      if (context.mounted) {
+        Navigator.pop(context);
+        loading = false;
+      }
 
       // Costruisci args di lancio
+      phase = 'LAUNCH-PROCESS';
       final args = buildLaunchArguments(config, gameDirectory: gameDirectory);
       final environment = {'DOWNLOAD_THREADS': ModpackDownloadSettings.limit.toString()};
 
@@ -80,26 +86,21 @@ class LaunchUtils {
         // Consuma comunque stdout/stderr
         process.stdout.transform(systemEncoding.decoder).listen((data) {
           final cleaned = data.replaceAll(RegExp(r'[\r\n]+'), '');
-          print('[STDOUT] $cleaned');
+          debugPrint('[STDOUT] $cleaned');
         });
 
         process.stderr.transform(systemEncoding.decoder).listen((data) {
           final cleaned = data.replaceAll(RegExp(r'[\r\n]+'), '');
-          print('[STDERR] $cleaned');
+          debugPrint('[STDERR] $cleaned');
         });
       }
 
       // Handle exit code senza bloccare UI
-      _handleProcessExit(context, process);
+      _handleProcessExit(context, process, config.gameVersion);
     } catch (e) {
       if (context.mounted) {
-        Navigator.pop(context);
-        WidgetUtils.showMessageDialog(
-          context,
-          AppLocalizations.of(context)!.generic_error_msg,
-          "$e",
-          () => Navigator.pop(context),
-        );
+        if (loading) Navigator.pop(context);
+        await ErrorDialog.show(context, code: phase, operation: 'Could not start Minecraft.', details: 'Minecraft: ${config.gameVersion}', error: e);
       }
     }
   }
@@ -115,12 +116,12 @@ class LaunchUtils {
   }
 
   /// Gestione exit del processo in background
-  static Future<void> _handleProcessExit(BuildContext context, Process process) async {
+  static Future<void> _handleProcessExit(BuildContext context, Process process, String version) async {
     final exitCode = await process.exitCode;
     Globals.consolecontroller.append("[LAUNCHER]: exit code $exitCode\n");
 
     if (exitCode != 0 && exitCode != 143 && context.mounted) {
-      _showCrashDialog(context);
+      await ErrorDialog.show(context, code: 'LAUNCH-EXIT', operation: 'Minecraft exited unexpectedly.', details: 'Minecraft: $version\nExit code: $exitCode');
     }
   }
 
@@ -208,59 +209,16 @@ class LaunchUtils {
     return args;
   }
 
-  /// Mostra crash dialog
-  static void _showCrashDialog(BuildContext context) {
-    WidgetUtils.showPopup(
-      context,
-      AppLocalizations.of(context)!.generic_error_msg,
-      <Widget>[
-        Text(
-          AppLocalizations.of(context)!.console_crash_msg,
-          style: const TextStyle(
-            fontSize: 14,
-            fontFamily: 'Comfortaa',
-            fontWeight: FontWeight.w500,
-            color: Colors.black,
-          ),
-        ),
-      ],
-      <Widget>[
-        TextButton(
-          child: const Text(
-            "OK",
-            style: TextStyle(
-              fontSize: 14,
-              fontFamily: 'Comfortaa',
-              fontWeight: FontWeight.w300,
-            ),
-          ),
-          onPressed: () {},
-        ),
-        TextButton(
-          child: Text(
-            AppLocalizations.of(context)!.generic_cancel,
-            style: const TextStyle(
-              fontSize: 14,
-              fontFamily: 'Comfortaa',
-              fontWeight: FontWeight.w300,
-            ),
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ],
-    );
-  }
-
   /// Determina se serve startOnFirstThread per macOS
   static bool shouldUseStartOnFirstThread(String resolvedGameVersion) {
     if (!Platform.isMacOS) return false;
 
     final verList = VersionUtils.getMinecraftVersions(false);
     final currentVersionIndex = verList.indexWhere(
-      (version) => version["id"] == resolvedGameVersion,
+          (version) => version["id"] == resolvedGameVersion,
     );
     final startingVersionIndex = verList.indexWhere(
-      (version) => version["id"] == "17w43a",
+          (version) => version["id"] == "17w43a",
     );
 
     return currentVersionIndex != -1 && startingVersionIndex != -1 && currentVersionIndex <= startingVersionIndex;

@@ -18,11 +18,13 @@ Future<Uint8List> loadOrCreateFileKey() async {
       return base64.decode(existing);
     }
   } catch (e) {
-    debugPrint('Key read failed, generating new key: $e');
+    debugPrint('Key read failed: $e');
+    rethrow;
   }
 
   final key = _generateSecureKey(32);
   await _storage.write(key: _keyStorageKey, value: base64.encode(key));
+
   return key;
 }
 
@@ -34,6 +36,7 @@ Future<bool> isSecureStorageAvailable() async {
   try {
     await _storage.write(key: '__probe__', value: '1');
     await _storage.delete(key: '__probe__');
+
     return true;
   } catch (_) {
     return false;
@@ -42,5 +45,6 @@ Future<bool> isSecureStorageAvailable() async {
 
 Uint8List _generateSecureKey(int bytes) {
   final rng = Random.secure();
+
   return Uint8List.fromList(List.generate(bytes, (_) => rng.nextInt(256)));
 }

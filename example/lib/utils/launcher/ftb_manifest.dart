@@ -28,6 +28,7 @@ class FtbManifest {
           if (value.isNotEmpty) return value;
         }
       }
+
       return null;
     }
 
@@ -54,6 +55,7 @@ class FtbManifest {
       }
       files.add(file);
     }
+
     return FtbManifest(
       versionName: json['name']?.toString() ?? '',
       minecraftVersion: minecraft,
@@ -103,6 +105,7 @@ class FtbManifestFile {
     if (rawSize != null && (rawSize is! int || rawSize < 0)) {
       throw FormatException('Invalid file size for $relative');
     }
+
     return FtbManifestFile(relativePath: relative, url: url, sha1: digest, size: rawSize as int?);
   }
 }

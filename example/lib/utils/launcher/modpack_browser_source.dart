@@ -37,6 +37,7 @@ class ModrinthBrowserSource extends ModpackBrowserSource {
     if (response.statusCode != 200) throw Exception('Modrinth search failed: ${response.statusCode}');
     final data = json.decode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
     final packs = (data['hits'] as List).cast<Map<String, dynamic>>();
+
     return ModpackSearchResult(packs: packs, total: data['total_hits'] as int? ?? packs.length);
   }
 }
@@ -57,6 +58,7 @@ class FtbBrowserSource extends ModpackBrowserSource {
     if (response.statusCode != 200) throw Exception('FTB request failed: ${response.statusCode}');
     final data = json.decode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
     if (data['status'] == 'error') throw Exception('FTB: ${data['message']}');
+
     return data;
   }
 
@@ -75,6 +77,7 @@ class FtbBrowserSource extends ModpackBrowserSource {
       final pack = await _get(Uri.parse('$apiUrl/$id'));
       final art = (pack['art'] as List? ?? []).whereType<Map>().where((a) => a['type'] == 'square');
       final authors = (pack['authors'] as List? ?? []).whereType<Map>();
+
       return <String, dynamic>{
         ...pack,
         '_full_description': pack['description'] ?? '',
@@ -88,6 +91,7 @@ class FtbBrowserSource extends ModpackBrowserSource {
         'date_modified': pack['updated'] is num ? DateTime.fromMillisecondsSinceEpoch((pack['updated'] as num).toInt() * 1000, isUtc: true).toIso8601String() : null,
       };
     }));
+
     return ModpackSearchResult(packs: results, total: ids.length);
   }
 }

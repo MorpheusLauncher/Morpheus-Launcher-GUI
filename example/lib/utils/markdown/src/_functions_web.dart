@@ -66,6 +66,7 @@ final ImageBuilder kDefaultImageBuilder = (
       );
     } else {
       final String src = p.join(p.current, fileUri.toString());
+
       return Image.network(
         src,
         width: width,
@@ -116,6 +117,7 @@ Widget _handleDataSchemeUri(Uri uri, final double? width, final double? height) 
   } else if (mimeType.startsWith('text/')) {
     return Text(uri.data!.contentAsString());
   }
+
   return const SizedBox();
 }
 

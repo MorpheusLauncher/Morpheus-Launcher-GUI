@@ -391,6 +391,7 @@ class VersionUtils {
       Globals.morpheusVersionsResponse = data['products'];
     } else {
       Globals.morpheusVersionsResponse = [];
+      throw HttpException('Morpheus products: HTTP ${response.statusCode}');
     }
   }
 
@@ -399,7 +400,7 @@ class VersionUtils {
     final response = await http.get(Uri.parse(url));
 
     if (response.statusCode != 200) {
-      throw Exception('Errore nel download del JSON: ${response.statusCode}');
+      throw Exception('JSON download failed: ${response.statusCode}');
     }
 
     Globals.incompatibleJson = json.decode(response.body);
@@ -464,8 +465,7 @@ class VersionUtils {
     return _checkCompatibilityWithReason(normalized.gameType, normalized.gameVer).reason;
   }
 
-  static bool isModpackCompatible(String loaderType, String version) =>
-      _checkCompatibilityWithReason(loaderType.toLowerCase(), version, forceClasspath: true).isCompatible;
+  static bool isModpackCompatible(String loaderType, String version) => _checkCompatibilityWithReason(loaderType.toLowerCase(), version, forceClasspath: true).isCompatible;
 
   static ({bool isCompatible, String? reason}) _checkCompatibilityWithReason(String loaderType, String version, {bool forceClasspath = false}) {
     try {

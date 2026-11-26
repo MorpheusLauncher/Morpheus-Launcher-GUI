@@ -24,6 +24,7 @@ String _aesGcmEncrypt(String plaintext, Uint8List key) {
   final out = Uint8List(12 + encrypted.bytes.length);
   out.setRange(0, 12, iv.bytes);
   out.setRange(12, out.length, encrypted.bytes);
+
   return base64.encode(out);
 }
 
@@ -33,6 +34,7 @@ String _aesGcmDecrypt(String b64, Uint8List key) {
   if (combined.length < 12) throw FormatException('Ciphertext too short');
   final iv = enc.IV(combined.sublist(0, 12));
   final encrypter = enc.Encrypter(enc.AES(enc.Key(key), mode: enc.AESMode.gcm));
+
   return encrypter.decrypt(enc.Encrypted(combined.sublist(12)), iv: iv);
 }
 
@@ -42,6 +44,7 @@ String _aesGcmDecrypt(String b64, Uint8List key) {
 
 Uint8List _deriveTokenKey(Uint8List fileKey) {
   final input = [...fileKey, ...utf8.encode('morpheus-token-key-v1')];
+
   return Uint8List.fromList(sha256.convert(input).bytes);
 }
 
@@ -67,6 +70,7 @@ String _readEncryptedFile(File file, Uint8List fileKey) {
   if (bytes.length < 12) throw FormatException('File too short');
   final iv = enc.IV(bytes.sublist(0, 12));
   final encrypter = enc.Encrypter(enc.AES(enc.Key(fileKey), mode: enc.AESMode.gcm));
+
   return encrypter.decrypt(enc.Encrypted(bytes.sublist(12)), iv: iv);
 }
 
@@ -86,6 +90,7 @@ Future<void> saveAccountListToJson(
       final plain = a.toJson();
       plain['accessToken'] = _aesGcmEncrypt(plain['accessToken'] as String, tokenKey);
       plain['refreshToken'] = _aesGcmEncrypt(plain['refreshToken'] as String, tokenKey);
+
       return plain;
     }).toList(),
   );
@@ -111,14 +116,14 @@ Future<List<Account>?> readAccountListFromJson(String filePath) async {
         copy['refreshToken'] = _aesGcmDecrypt(copy['refreshToken'] as String, tokenKey);
       } catch (e) {
         debugPrint("Token decrypt failed for '${copy['username']}': $e");
-        copy['accessToken'] = '';
-        copy['refreshToken'] = '';
+        rethrow;
       }
+
       return Account.fromJson(copy);
     }).toList();
   } catch (e) {
     debugPrint('Account file read failed: $e');
-    await saveAccountListToJson([], filePath);
+
     return null;
   }
 }

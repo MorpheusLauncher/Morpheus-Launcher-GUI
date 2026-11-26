@@ -29,6 +29,7 @@ class InstallationCancellation {
 
   Future<T> wait<T>(Future<T> operation) {
     check();
+
     return Future.any([operation, _cancelled.future.then<T>((_) => throw const InstallationCancelled())]);
   }
 }

@@ -239,14 +239,16 @@ class _MinecraftSkinViewerState extends State<MinecraftSkinViewer> with SingleTi
 }
 
 class _SkinTextures {
-  _SkinTextures(img.Image source) : skin = source.width > 64 ? img.copyResize(source, width: 64, height: (source.height * 64 / source.width).round(), interpolation: img.Interpolation.nearest) : source;
+  _SkinTextures(img.Image source)
+      : skin = source.width > 64 ? img.copyResize(source, width: 64, height: (source.height * 64 / source.width).round(), interpolation: img.Interpolation.nearest) : source;
   final img.Image skin;
   img.Image? _cape;
 
   img.Image? get cape => _cape;
 
   set cape(img.Image? value) {
-    _cape = value != null && value.width > 64 ? img.copyResize(value, width: 64, height: (value.height * 64 / value.width).round(), interpolation: img.Interpolation.nearest) : value;
+    _cape =
+        value != null && value.width > 64 ? img.copyResize(value, width: 64, height: (value.height * 64 / value.width).round(), interpolation: img.Interpolation.nearest) : value;
   }
 }
 
@@ -270,7 +272,15 @@ class _Face {
 /// Texture pixels are painted as quads to keep nearest-neighbour pixel art
 /// and transparent outer layers independent of the underlying 3D backend.
 class _SkinPainter extends CustomPainter {
-  _SkinPainter({required this.textures, required this.slim, required this.animationTime, required this.yaw, required this.pitch, required this.zoom, required this.cape}) : super(repaint: animationTime);
+  _SkinPainter({
+    required this.textures,
+    required this.slim,
+    required this.animationTime,
+    required this.yaw,
+    required this.pitch,
+    required this.zoom,
+    required this.cape,
+  }) : super(repaint: animationTime);
 
   final _SkinTextures textures;
   final bool slim;
@@ -323,9 +333,43 @@ class _SkinPainter extends CustomPainter {
       angle: -swing,
       mirror: !modern,
     );
-    part(center: _Point3(4 + armWidth / 2, -2, 0), width: armWidth, height: 12, depth: 4, u: 40, v: 16, outerU: modern ? 40 : null, outerV: modern ? 32 : null, pivot: const _Point3(5, -6, 0), angle: swing);
-    part(center: const _Point3(-2, 10, 0), width: 4, height: 12, depth: 4, u: modern ? 16 : 0, v: modern ? 48 : 16, outerU: modern ? 0 : null, outerV: modern ? 48 : null, pivot: const _Point3(-2, 4, 0), angle: swing, mirror: !modern);
-    part(center: const _Point3(2, 10, 0), width: 4, height: 12, depth: 4, u: 0, v: 16, outerU: modern ? 0 : null, outerV: modern ? 32 : null, pivot: const _Point3(2, 4, 0), angle: -swing);
+    part(
+      center: _Point3(4 + armWidth / 2, -2, 0),
+      width: armWidth,
+      height: 12,
+      depth: 4,
+      u: 40,
+      v: 16,
+      outerU: modern ? 40 : null,
+      outerV: modern ? 32 : null,
+      pivot: const _Point3(5, -6, 0),
+      angle: swing,
+    );
+    part(
+      center: const _Point3(-2, 10, 0),
+      width: 4,
+      height: 12,
+      depth: 4,
+      u: modern ? 16 : 0,
+      v: modern ? 48 : 16,
+      outerU: modern ? 0 : null,
+      outerV: modern ? 48 : null,
+      pivot: const _Point3(-2, 4, 0),
+      angle: swing,
+      mirror: !modern,
+    );
+    part(
+      center: const _Point3(2, 10, 0),
+      width: 4,
+      height: 12,
+      depth: 4,
+      u: 0,
+      v: 16,
+      outerU: modern ? 0 : null,
+      outerV: modern ? 32 : null,
+      pivot: const _Point3(2, 4, 0),
+      angle: -swing,
+    );
     final capeTexture = cape;
     if (capeTexture != null) {
       _addBox(faces, size, capeTexture, const _Point3(0, 0, -3.25), 10, 16, 1, 0, 0, pivot: const _Point3(0, -8, -2.6), angle: -(0.19 + math.sin(t / 1.5) * 0.06), isCape: true);
@@ -354,7 +398,22 @@ class _SkinPainter extends CustomPainter {
     }
   }
 
-  void _addBox(List<_Face> faces, Size size, img.Image image, _Point3 center, int w, int h, int d, int u, int v, {_Point3? pivot, double angle = 0, bool mirror = false, double inflate = 0, bool isCape = false}) {
+  void _addBox(
+    List<_Face> faces,
+    Size size,
+    img.Image image,
+    _Point3 center,
+    int w,
+    int h,
+    int d,
+    int u,
+    int v, {
+    _Point3? pivot,
+    double angle = 0,
+    bool mirror = false,
+    double inflate = 0,
+    bool isCape = false,
+  }) {
     final x0 = center.x - w / 2 - inflate;
     final x1 = center.x + w / 2 + inflate;
     final y0 = center.y - h / 2 - inflate;
@@ -446,7 +505,13 @@ class _SkinPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _SkinPainter oldDelegate) =>
-      textures != oldDelegate.textures || cape != oldDelegate.cape || slim != oldDelegate.slim || animationTime != oldDelegate.animationTime || yaw != oldDelegate.yaw || pitch != oldDelegate.pitch || zoom != oldDelegate.zoom;
+      textures != oldDelegate.textures ||
+      cape != oldDelegate.cape ||
+      slim != oldDelegate.slim ||
+      animationTime != oldDelegate.animationTime ||
+      yaw != oldDelegate.yaw ||
+      pitch != oldDelegate.pitch ||
+      zoom != oldDelegate.zoom;
 }
 
 class ThreeDimensionalViewer {

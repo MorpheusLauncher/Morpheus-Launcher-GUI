@@ -5,8 +5,8 @@ import 'package:archive/archive.dart';
 import 'package:http/http.dart' as http;
 import 'package:morpheus_launcher_gui/globals.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/file_downloader.dart';
-import 'package:morpheus_launcher_gui/utils/launcher/modpack_installations.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/modpack_detail_source.dart';
+import 'package:morpheus_launcher_gui/utils/launcher/modpack_installations.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/parallel_downloads.dart';
 
 /// Manages Modrinth modpack instances under:
@@ -208,7 +208,7 @@ class ModrinthUtils {
       final versions = json.decode(versionsRes.body) as List;
       if (versions.isEmpty) throw Exception('No versions available for $projectId');
 
-    final latest = selectModrinthVersion(versions, selectedVersionId);
+      final latest = selectModrinthVersion(versions, selectedVersionId);
       final versionId = latest['id']?.toString() ?? '';
       final versionName = latest['version_number']?.toString() ?? '';
 

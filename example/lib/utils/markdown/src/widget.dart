@@ -416,6 +416,7 @@ class _MarkdownWidgetState extends State<MarkdownWidget> implements MarkdownBuil
         }
       };
     _recognizers.add(recognizer);
+
     return recognizer;
   }
 
@@ -425,6 +426,7 @@ class _MarkdownWidgetState extends State<MarkdownWidget> implements MarkdownBuil
     if (widget.syntaxHighlighter != null) {
       return widget.syntaxHighlighter!.format(code);
     }
+
     return TextSpan(style: styleSheet.code, text: code);
   }
 
@@ -478,6 +480,7 @@ class MarkdownBody extends MarkdownWidget {
     if (children!.length == 1 && shrinkWrap) {
       return children.single;
     }
+
     return Column(
       mainAxisSize: shrinkWrap ? MainAxisSize.min : MainAxisSize.max,
       crossAxisAlignment: fitContent ? CrossAxisAlignment.start : CrossAxisAlignment.stretch,
@@ -573,6 +576,7 @@ class TaskListSyntax extends md.InlineSyntax {
     el.attributes['disabled'] = 'true';
     el.attributes['checked'] = '${match[1]!.trim().isNotEmpty}';
     parser.addNode(el);
+
     return true;
   }
 }

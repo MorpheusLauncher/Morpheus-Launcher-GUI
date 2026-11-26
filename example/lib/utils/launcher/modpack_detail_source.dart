@@ -8,12 +8,14 @@ class ModpackVersion {
   final String id;
   final String label;
   final bool compatible;
+
   const ModpackVersion({required this.id, required this.label, this.compatible = true});
 }
 
 Map<String, dynamic> selectModrinthVersion(List versions, String? id) {
   if (versions.isEmpty) throw StateError('No Modrinth versions available');
   if (id == null) return versions.first as Map<String, dynamic>;
+
   return versions.whereType<Map<String, dynamic>>().firstWhere(
         (version) => version['id']?.toString() == id,
         orElse: () => throw StateError('Selected Modrinth version is unavailable'),
@@ -62,6 +64,7 @@ class ModrinthDetailSource extends ModpackDetailSource {
     final id = Uri.encodeComponent(pack['project_id'].toString());
     Future<http.Response> get(String path) {
       final uri = Uri.parse('${Urls.modrinthApiURL}$path');
+
       return client == null ? http.get(uri) : client!.get(uri);
     }
 
@@ -72,12 +75,16 @@ class ModrinthDetailSource extends ModpackDetailSource {
     final project = json.decode(utf8.decode(responses[0].bodyBytes)) as Map<String, dynamic>;
     final versions = json.decode(utf8.decode(responses[1].bodyBytes)) as List;
     final latest = versions.isEmpty ? null : versions.first as Map<String, dynamic>;
+
     return ModpackDetails(
       description: project['body']?.toString() ?? '',
       gameVersions: (project['game_versions'] as List? ?? []).map((v) => v.toString()).toList(),
       loaders: (project['loaders'] as List? ?? []).map((v) => v.toString()).toList(),
-      versions: versions.whereType<Map>().where((v) => v['id'] != null && v['version_number'] != null)
-          .map((v) => ModpackVersion(id: v['id'].toString(), label: v['version_number'].toString())).toList(),
+      versions: versions
+          .whereType<Map>()
+          .where((v) => v['id'] != null && v['version_number'] != null)
+          .map((v) => ModpackVersion(id: v['id'].toString(), label: v['version_number'].toString()))
+          .toList(),
       supportsServer: project['server_side'] == 'required',
       latestVersion: latest,
       dependencies: latest?['dependencies'] as List? ?? [],
@@ -96,12 +103,15 @@ class FtbDetailSource extends ModpackDetailSource {
     final versions = (pack['versions'] as List? ?? []).whereType<Map>().where((v) => v['private'] != true && v['id'] != null).toList()
       ..sort((a, b) => (b['updated'] as num? ?? 0).compareTo(a['updated'] as num? ?? 0));
     final targets = versions.expand((v) => (v['targets'] as List? ?? []).whereType<Map>()).toList();
+
     return ModpackDetails(
       description: pack['_full_description']?.toString() ?? '',
       gameVersions: targets.where((t) => t['type'] == 'game' && t['name'] == 'minecraft').map((t) => '${t['version']}').toSet().toList().reversed.toList(),
       loaders: targets.where((t) => t['type'] == 'modloader').map((t) => '${t['name']}').toSet().toList(),
-      versions: versions.map((v) => ModpackVersion(id: v['id'].toString(), label: v['name']?.toString() ?? v['id'].toString(),
-          compatible: ftbVersionCompatibility(v) != FtbCompatibility.incompatible)).toList(),
+      versions: versions
+          .map((v) =>
+              ModpackVersion(id: v['id'].toString(), label: v['name']?.toString() ?? v['id'].toString(), compatible: ftbVersionCompatibility(v) != FtbCompatibility.incompatible))
+          .toList(),
     );
   }
 }

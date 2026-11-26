@@ -309,7 +309,7 @@ class LauncherUtils {
         }
       }
     } catch (error) {
-      print("Errore nel checkJava: $error");
+      debugPrint("Java check failed: $error");
     }
 
     return null;
@@ -331,7 +331,8 @@ class LauncherUtils {
           await _installJava(requiredJavaVersion, runtimeDir);
           javaExecutable = _findJavaExecutable(runtimeDir);
         } catch (error) {
-          print("Errore nell'installazione di java $requiredJavaVersion: $error");
+          debugPrint("Java $requiredJavaVersion installation failed: $error");
+          rethrow;
         }
       }
     }
@@ -360,12 +361,16 @@ class LauncherUtils {
       for (final ver in manifest["versions"]) {
         if (ver["id"] == realGameVersion) {
           final response = await http.get(Uri.parse(ver["url"]));
+          if (response.statusCode != 200) {
+            throw HttpException('Java metadata: HTTP ${response.statusCode}');
+          }
 
           return json.decode(response.body)["javaVersion"]?["majorVersion"];
         }
       }
     } catch (error) {
-      print("Errore nel rilevamento della versione di java: $error");
+      debugPrint("Java version detection failed: $error");
+      rethrow;
     }
 
     return null;
@@ -394,7 +399,7 @@ class LauncherUtils {
     try {
       final response = await client.send(http.Request("GET", Uri.parse(download.url)));
       if (response.statusCode != 200) {
-        throw HttpException("Download fallito (${response.statusCode})", uri: Uri.parse(download.url));
+        throw HttpException("Download failed (${response.statusCode})", uri: Uri.parse(download.url));
       }
       await response.stream.pipe(File(archivePath).openWrite());
     } finally {
@@ -481,7 +486,7 @@ class LauncherUtils {
     // Skip musl/alpine builds
     final package = packages.firstWhere(
       (package) => !"${package["name"]}".contains("musl") && !"${package["name"]}".contains("alpine"),
-      orElse: () => throw StateError("Nessun pacchetto java $javaVersion disponibile"),
+      orElse: () => throw StateError("No Java $javaVersion package available"),
     );
 
     return (fileName: package["name"] as String, url: package["download_url"] as String);

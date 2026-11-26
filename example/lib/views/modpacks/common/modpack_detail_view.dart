@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:morpheus_launcher_gui/globals.dart';
 import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
+import 'package:morpheus_launcher_gui/utils/error_dialog.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/ftb_utils.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/launch_utils.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/modpack_detail_source.dart';
@@ -80,6 +81,7 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
     if (widget.source is FtbDetailSource) {
       final id = widget.modpack['project_id']?.toString() ?? '';
       if (RegExp(r'^[0-9]+$').hasMatch(id)) setState(() => _isInstalled = FtbUtils.instanceExists(id));
+
       return;
     }
     final slug = widget.modpack["slug"]?.toString() ?? '';
@@ -108,6 +110,15 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
       _selectedVersionId = available.isEmpty ? null : available.first.id;
     } catch (e) {
       debugPrint("Error fetching modpack details: $e");
+      if (mounted) {
+        await ErrorDialog.show(
+          context,
+          code: 'MODPACK-DETAILS',
+          operation: 'Could not load modpack details.',
+          details: 'Provider: ${widget.source is FtbDetailSource ? 'FTB' : 'Modrinth'}',
+          error: e,
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -202,8 +213,15 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
         iconUrl: iconUrl,
         install: (onProgress, onStatus, cancellation) {
           if (widget.source is FtbDetailSource) {
-            return FtbUtils.install(pack: widget.modpack, selectedVersionId: selectedVersionId, onProgress: onProgress, onStatus: onStatus, cancellation: cancellation);
+            return FtbUtils.install(
+              pack: widget.modpack,
+              selectedVersionId: selectedVersionId,
+              onProgress: onProgress,
+              onStatus: onStatus,
+              cancellation: cancellation,
+            );
           }
+
           return ModrinthUtils.installModpack(
             projectId: projectId,
             slug: slug,
@@ -222,11 +240,12 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
     } catch (e) {
       debugPrint("Install error: $e");
       if (mounted) {
-        WidgetUtils.showMessageDialog(
+        await ErrorDialog.show(
           context,
-          AppLocalizations.of(context)!.generic_error_msg,
-          e.toString(),
-          () => Navigator.pop(context),
+          code: 'MODPACK-INSTALL',
+          operation: 'Could not install the modpack.',
+          details: 'Provider: ${widget.source is FtbDetailSource ? 'FTB' : 'Modrinth'}\nVersion: $selectedVersionId',
+          error: e,
         );
       }
     }
@@ -265,12 +284,24 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
         TextButton(
           onPressed: () async {
             Navigator.pop(context);
-            if (widget.source is FtbDetailSource) {
-              await FtbUtils.removeInstance(slug);
-            } else {
-              await ModrinthUtils.removeInstance(slug);
+            try {
+              if (widget.source is FtbDetailSource) {
+                await FtbUtils.removeInstance(slug);
+              } else {
+                await ModrinthUtils.removeInstance(slug);
+              }
+              if (mounted) setState(() => _isInstalled = false);
+            } catch (e) {
+              if (mounted) {
+                await ErrorDialog.show(
+                  context,
+                  code: 'MODPACK-REMOVE',
+                  operation: 'Could not remove the modpack. Removal may be incomplete.',
+                  details: 'Provider: ${widget.source is FtbDetailSource ? 'FTB' : 'Modrinth'}',
+                  error: e,
+                );
+              }
             }
-            if (mounted) setState(() => _isInstalled = false);
           },
           child: Text(
             AppLocalizations.of(context)!.modpack_remove,
@@ -685,6 +716,7 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
               itemExtent: 44,
               itemBuilder: (context, index) {
                 final version = _versions[index];
+
                 return Tooltip(
                   message: version.compatible ? '' : AppLocalizations.of(context)!.modpack_incompatible,
                   child: InkWell(
@@ -695,8 +727,13 @@ class _ModpackDetailViewState extends State<ModpackDetailView> {
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Row(children: [
                           Expanded(
-                              child: Text(version.label,
-                                  maxLines: 1, overflow: TextOverflow.ellipsis, style: WidgetUtils.customTextStyle(14, FontWeight.w400, ColorUtils.primaryFontColor))),
+                            child: Text(
+                              version.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: WidgetUtils.customTextStyle(14, FontWeight.w400, ColorUtils.primaryFontColor),
+                            ),
+                          ),
                           if (version.id == _selectedVersionId) Icon(Icons.check, size: 18, color: ColorUtils.dynamicAccentColor),
                         ]),
                       ),

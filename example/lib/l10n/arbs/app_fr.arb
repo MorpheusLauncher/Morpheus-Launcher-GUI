@@ -43,7 +43,9 @@
   "modpack_author_by": "par {author}",
   "@modpack_author_by": {
     "placeholders": {
-      "author": { "type": "String" }
+      "author": {
+        "type": "String"
+      }
     }
   },
   "modpack_stats_downloads": "Téléchargements",

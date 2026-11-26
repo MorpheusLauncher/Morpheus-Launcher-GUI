@@ -71,9 +71,14 @@ bool isOfflineSlimSkin(String username) {
 }
 
 // Salva gli account su disco
-void saveAccounts() {
+bool accountFileWriteBlocked = false;
+
+Future<void> saveAccounts() async {
+  if (accountFileWriteBlocked) {
+    throw StateError('Account file could not be read; saving is disabled to preserve it.');
+  }
   final filePath = "${LauncherUtils.getApplicationFolder("morpheus")}/accounts.json";
-  saveAccountListToJson(Globals.accounts, filePath);
+  await saveAccountListToJson(Globals.accounts, filePath);
 }
 
 // Legge una lista di account da un file JSON. Lancia FormatException se il file
@@ -91,13 +96,10 @@ List<Account> importAccountListFromJsonPlain(String filePath) {
   }
 
   return decoded.map<Account>((entry) {
-    if (entry is! Map<String, dynamic> ||
-        entry['username'] is! String ||
-        entry['uuid'] is! String ||
-        entry['accessToken'] is! String ||
-        entry['refreshToken'] is! String) {
+    if (entry is! Map<String, dynamic> || entry['username'] is! String || entry['uuid'] is! String || entry['accessToken'] is! String || entry['refreshToken'] is! String) {
       throw const FormatException("Invalid account entry in file");
     }
+
     return Account.fromJson(entry);
   }).toList();
 }
@@ -112,6 +114,7 @@ int mergeImportedAccounts(List<Account> imported) {
       added++;
     }
   }
+
   return added;
 }
 

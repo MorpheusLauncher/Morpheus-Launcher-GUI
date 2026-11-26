@@ -207,6 +207,7 @@ class MarkdownBuilder implements md.NodeVisitor {
     assert(_tables.isEmpty);
     assert(_inlines.isEmpty);
     assert(!_isInBlockquote);
+
     return _blocks.single.children;
   }
 
@@ -335,6 +336,7 @@ class MarkdownBuilder implements md.NodeVisitor {
       if (softLineBreak) {
         return text;
       }
+
       return text.replaceAll(softLineBreakPattern, ' ');
     }
 
@@ -623,6 +625,7 @@ class MarkdownBuilder implements md.NodeVisitor {
 
     if (_linkHandlers.isNotEmpty) {
       final TapGestureRecognizer recognizer = _linkHandlers.last as TapGestureRecognizer;
+
       return GestureDetector(onTap: recognizer.onTap, child: child);
     } else {
       return child;
@@ -633,6 +636,7 @@ class MarkdownBuilder implements md.NodeVisitor {
     if (checkboxBuilder != null) {
       return checkboxBuilder!(checked);
     }
+
     return Padding(
       padding: styleSheet.listBulletPadding!,
       child: Icon(
@@ -901,6 +905,7 @@ class MarkdownBuilder implements md.NodeVisitor {
       case 'li':
         break;
     }
+
     return WrapAlignment.start;
   }
 
@@ -921,6 +926,7 @@ class MarkdownBuilder implements md.NodeVisitor {
       case 'h6':
         return styleSheet.h6Padding!;
     }
+
     return EdgeInsets.zero;
   }
 

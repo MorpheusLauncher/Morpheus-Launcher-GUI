@@ -100,6 +100,7 @@ class MarkdownStyleSheet {
   /// Creates a [MarkdownStyleSheet] from the [TextStyle]s in the provided [ThemeData].
   factory MarkdownStyleSheet.fromTheme(ThemeData theme) {
     assert(theme.textTheme.bodyMedium?.fontSize != null);
+
     return MarkdownStyleSheet(
       a: const TextStyle(color: Colors.blue),
       p: theme.textTheme.bodyMedium,
@@ -167,6 +168,7 @@ class MarkdownStyleSheet {
   /// Creates a [MarkdownStyleSheet] from the [TextStyle]s in the provided [CupertinoThemeData].
   factory MarkdownStyleSheet.fromCupertinoTheme(CupertinoThemeData theme) {
     assert(theme.textTheme.textStyle.fontSize != null);
+
     return MarkdownStyleSheet(
       a: theme.textTheme.textStyle.copyWith(
         color: theme.brightness == Brightness.dark ? CupertinoColors.link.darkColor : CupertinoColors.link.color,
@@ -398,6 +400,7 @@ class MarkdownStyleSheet {
     // other instead of the previous value, since only one is allowed.
     final TextScaler? newTextScaler = textScaler ?? (textScaleFactor == null ? this.textScaler : null);
     final double? nextTextScaleFactor = textScaleFactor ?? (textScaler == null ? this.textScaleFactor : null);
+
     return MarkdownStyleSheet(
       a: a ?? this.a,
       p: p ?? this.p,
@@ -465,6 +468,7 @@ class MarkdownStyleSheet {
     if (other == null) {
       return this;
     }
+
     return copyWith(
       a: a!.merge(other.a),
       p: p!.merge(other.p),
@@ -723,6 +727,7 @@ class MarkdownStyleSheet {
     if (other.runtimeType != MarkdownStyleSheet) {
       return false;
     }
+
     return other is MarkdownStyleSheet &&
         other.a == a &&
         other.p == p &&

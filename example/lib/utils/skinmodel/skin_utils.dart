@@ -127,6 +127,7 @@ class SkinUtils {
     } catch (_) {
       // Missing or malformed profile data means there is no usable cape.
     }
+
     return null;
   }
 
@@ -146,6 +147,7 @@ class SkinUtils {
     } catch (_) {
       // Missing or malformed profile data means there is no usable cape.
     }
+
     return null;
   }
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:bitsdojo_window/bitsdojo_window.dart';
@@ -14,9 +15,58 @@ import 'package:morpheus_launcher_gui/views/main_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:system_theme/system_theme.dart';
 
+import 'account/account_utils.dart';
 import 'account/encryption.dart';
+import 'utils/error_dialog.dart';
+
+final GlobalKey<NavigatorState> diagnosticNavigatorKey = GlobalKey<NavigatorState>();
+bool _unexpectedDialogOpen = false;
+
+void _reportUnexpected(Object error, StackTrace stack) {
+  debugPrint('Unexpected error (${error.runtimeType})');
+  final context = diagnosticNavigatorKey.currentContext;
+  if (context == null || !context.mounted || _unexpectedDialogOpen) return;
+  _unexpectedDialogOpen = true;
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    try {
+      if (context.mounted) {
+        await ErrorDialog.show(context, code: 'UNEXPECTED', operation: 'An unexpected error occurred.', error: error);
+      }
+    } finally {
+      _unexpectedDialogOpen = false;
+    }
+  });
+  WidgetsBinding.instance.ensureVisualUpdate();
+}
 
 Future<void> main() async {
+  await runZonedGuarded(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
+      FlutterError.onError = (details) {
+        FlutterError.presentError(details);
+        _reportUnexpected(details.exception, details.stack ?? StackTrace.empty);
+      };
+      try {
+        await _startApp();
+      } catch (error) {
+        runApp(MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: Text(
+                'Launcher initialization failed (STARTUP-EARLY).\nError type: ${error.runtimeType}',
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ));
+      }
+    },
+    _reportUnexpected,
+  );
+}
+
+Future<void> _startApp() async {
   if (Platform.isWindows) {
     int? buildNumber = getBuildNumber(Platform.operatingSystemVersion);
 
@@ -66,20 +116,20 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ValueListenableBuilder<String>(
       valueListenable: LanguageSettings.selected,
-      builder: (context, language, child) =>
-          MaterialApp(
-            locale: language == LanguageSettings.system ? null : Locale(language),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            localeResolutionCallback: (locale, supportedLocales) {
-              return supportedLocales.firstWhere(
-                    (supportedLocale) => supportedLocale.languageCode == locale?.languageCode,
-                orElse: () => const Locale('en'),
-              );
-            },
-            debugShowCheckedModeBanner: false,
-            home: child,
-          ),
+      builder: (context, language, child) => MaterialApp(
+        locale: language == LanguageSettings.system ? null : Locale(language),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        localeResolutionCallback: (locale, supportedLocales) {
+          return supportedLocales.firstWhere(
+            (supportedLocale) => supportedLocale.languageCode == locale?.languageCode,
+            orElse: () => const Locale('en'),
+          );
+        },
+        debugShowCheckedModeBanner: false,
+        navigatorKey: diagnosticNavigatorKey,
+        home: child,
+      ),
       child: MyAppBody(),
     );
   }
@@ -93,11 +143,21 @@ class MyAppBody extends StatefulWidget {
 class MyAppBodyState extends State<MyAppBody> {
   late WindowEffect effect;
   bool isLoading = true;
+  Object? initializationError;
 
   @override
   void initState() {
     super.initState();
-    setWindowEffect();
+    setWindowEffect().catchError((Object error) {
+      if (mounted) {
+        setState(
+          () {
+            initializationError = error;
+            isLoading = false;
+          },
+        );
+      }
+    });
   }
 
   Future<void> setWindowEffect() async {
@@ -149,6 +209,7 @@ class MyAppBodyState extends State<MyAppBody> {
     } else {
       Globals.accounts = [];
       accountLoadFailed = true;
+      accountFileWriteBlocked = true;
     }
 
     Window.setEffect(
@@ -160,68 +221,78 @@ class MyAppBodyState extends State<MyAppBody> {
       Window.overrideMacOSBrightness(dark: Globals.darkModeTheme);
     }
 
+    final startupFailures = <String>[];
     await Future.wait([
       (() async {
         try {
           Globals.pinnedVersions = await VersionUtils.getPinnedVersions();
         } catch (e) {
-          print(e);
+          debugPrint('Failed to load pinned versions: $e');
+          startupFailures.add('Pinned versions');
         }
       })(),
       (() async {
         try {
           await NewsUtils.getNews();
         } catch (e) {
-          print(e);
+          debugPrint('Failed to load news: $e');
+          startupFailures.add('News');
         }
       })(),
       (() async {
         try {
           await VersionUtils.fetchMorpheusProducts();
         } catch (e) {
-          print(e);
+          debugPrint('Failed to load Morpheus products: $e');
+          startupFailures.add('Morpheus products');
         }
       })(),
       (() async {
         try {
           await VersionUtils.getVersions();
         } catch (e) {
-          print(e);
+          debugPrint('Failed to load Minecraft versions: $e');
+          startupFailures.add('Minecraft versions');
         }
       })(),
       (() async {
         try {
           await VersionUtils.getFabric();
         } catch (e) {
-          print(e);
+          debugPrint('Failed to load Fabric: $e');
+          startupFailures.add('Fabric');
         }
       })(),
       (() async {
         try {
           Globals.forgeVersions = await VersionUtils.getForge();
         } catch (e) {
-          print(e);
+          debugPrint('Failed to load Forge: $e');
+          startupFailures.add('Forge');
         }
       })(),
       (() async {
         try {
           Globals.optiforgeVersions = await VersionUtils.getOptiForge();
         } catch (e) {
-          print(e);
+          debugPrint('Failed to load OptiForge: $e');
+          startupFailures.add('OptiForge');
         }
       })(),
       (() async {
         try {
           Globals.optifineVersions = await VersionUtils.getOptifine();
         } catch (e) {
-          print(e);
+          debugPrint('Failed to load OptiFine: $e');
+          startupFailures.add('OptiFine');
         }
       })(),
       (() async {
         try {
           await VersionUtils.fetchIncompatibleVersions();
         } catch (e) {
-          print(e);
+          debugPrint('Failed to load compatibility rules: $e');
+          startupFailures.add('Compatibility rules');
         }
       })(),
     ]);
@@ -232,29 +303,49 @@ class MyAppBodyState extends State<MyAppBody> {
 
     if (accountLoadFailed) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        WidgetUtils.showMessageDialog(
+        if (!mounted) return;
+        ErrorDialog.show(
           context,
-          "Account Error",
-          "Failed to decrypt saved accounts.\n\n"
-              "Your HWID may have changed (hardware replaced, OS reinstalled).\n"
-              "You will need to log in again.",
-              () => Navigator.pop(context),
+          code: 'ACCOUNT-READ',
+          operation: 'Could not read saved accounts. The original file has been preserved and saving accounts is disabled until the launcher is restarted.',
         );
+      });
+    } else if (startupFailures.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ErrorDialog.show(context, code: 'STARTUP-CATALOGS', operation: 'Some launcher data could not be loaded.', details: 'Unavailable: ${startupFailures.join(', ')}');
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (initializationError != null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Launcher initialization failed (STARTUP-INIT).'),
+              TextButton(
+                onPressed: () => ErrorDialog.show(context, code: 'STARTUP-INIT', operation: 'Could not initialize the launcher.', error: initializationError),
+                child: const Text('Show details'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return isLoading
         ? Column(
-      children: [
-        drawTitleCustomBar(),
-        Expanded(
-          child: Center(child: Image.asset('assets/morpheus-animated.gif', width: 96)),
-        ),
-      ],
-    )
+            children: [
+              drawTitleCustomBar(),
+              Expanded(
+                child: Center(child: Image.asset('assets/morpheus-animated.gif', width: 96)),
+              ),
+            ],
+          )
         : const MainPage();
   }
 }

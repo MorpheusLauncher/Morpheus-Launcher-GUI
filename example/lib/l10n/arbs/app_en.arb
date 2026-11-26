@@ -36,7 +36,9 @@
   "modpack_search_minimum_characters": "Enter at least {count} characters",
   "@modpack_search_minimum_characters": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "modded_modrinth_title": "Modrinth Modpacks",
@@ -48,7 +50,9 @@
   "modpack_author_by": "by {author}",
   "@modpack_author_by": {
     "placeholders": {
-      "author": { "type": "String" }
+      "author": {
+        "type": "String"
+      }
     }
   },
   "modpack_stats_downloads": "Downloads",

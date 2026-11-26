@@ -113,5 +113,6 @@ Widget _handleDataSchemeUri(Uri uri, final double? width, final double? height) 
   } else if (mimeType.startsWith('text/')) {
     return Text(uri.data!.contentAsString());
   }
+
   return const SizedBox();
 }

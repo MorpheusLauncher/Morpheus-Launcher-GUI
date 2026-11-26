@@ -17,6 +17,7 @@ import 'package:morpheus_launcher_gui/globals.dart';
 import 'package:morpheus_launcher_gui/l10n/app_localizations.dart';
 import 'package:morpheus_launcher_gui/main.dart';
 import 'package:morpheus_launcher_gui/utils/circle_utils.dart';
+import 'package:morpheus_launcher_gui/utils/error_dialog.dart';
 import 'package:morpheus_launcher_gui/utils/language_settings.dart';
 import 'package:morpheus_launcher_gui/utils/launcher//version_utils.dart';
 import 'package:morpheus_launcher_gui/utils/launcher/ftb_utils.dart';
@@ -202,34 +203,8 @@ class _MainPageState extends State<MainPage> {
 
             return ColorFiltered(
               colorFilter: selected
-                  ? const ColorFilter.mode(
-                      Colors.transparent,
-                      BlendMode.multiply,
-                    )
-                  : const ColorFilter.matrix(
-                      <double>[
-                        0.2126,
-                        0.7152,
-                        0.0722,
-                        0,
-                        0,
-                        0.2126,
-                        0.7152,
-                        0.0722,
-                        0,
-                        0,
-                        0.2126,
-                        0.7152,
-                        0.0722,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        1,
-                        0,
-                      ],
-                    ),
+                  ? const ColorFilter.mode(Colors.transparent, BlendMode.multiply)
+                  : const ColorFilter.matrix(<double>[0.2126, 0.7152, 0.0722, 0, 0, 0.2126, 0.7152, 0.0722, 0, 0, 0.2126, 0.7152, 0.0722, 0, 0, 0, 0, 0, 1, 0]),
               child: Container(
                 height: 30,
                 width: 30,
@@ -844,28 +819,7 @@ class _MainPageState extends State<MainPage> {
                   child: ColorFiltered(
                     colorFilter: compatible
                         ? const ColorFilter.mode(Colors.transparent, BlendMode.multiply)
-                        : const ColorFilter.matrix(<double>[
-                            0.2126,
-                            0.7152,
-                            0.0722,
-                            0,
-                            0,
-                            0.2126,
-                            0.7152,
-                            0.0722,
-                            0,
-                            0,
-                            0.2126,
-                            0.7152,
-                            0.0722,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            1,
-                            0,
-                          ]),
+                        : const ColorFilter.matrix(<double>[0.2126, 0.7152, 0.0722, 0, 0, 0.2126, 0.7152, 0.0722, 0, 0, 0.2126, 0.7152, 0.0722, 0, 0, 0, 0, 0, 1, 0]),
                     child: Container(
                       height: 30,
                       width: 30,
@@ -1449,7 +1403,7 @@ class _MainPageState extends State<MainPage> {
           Row(children: [
             const SizedBox(width: 10),
             ClipRRect(
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: const BorderRadius.all(Radius.circular(6)),
               child: task.iconUrl.isEmpty
                   ? _modrinthIconPlaceholder()
                   : CachedNetworkImage(
@@ -1458,7 +1412,8 @@ class _MainPageState extends State<MainPage> {
                       height: 30,
                       fit: BoxFit.cover,
                       placeholder: (_, __) => _modrinthIconPlaceholder(),
-                      errorWidget: (_, __, ___) => _modrinthIconPlaceholder()),
+                      errorWidget: (_, __, ___) => _modrinthIconPlaceholder(),
+                    ),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -1472,10 +1427,12 @@ class _MainPageState extends State<MainPage> {
                     Text('${(task.progress * 100).toInt()}%', style: WidgetUtils.customTextStyle(13, FontWeight.w600, ColorUtils.primaryFontColor)),
                   ],
                 ]),
-                Text(task.error == null ? task.status : '${AppLocalizations.of(context)!.generic_error_msg}: ${task.error}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: WidgetUtils.customTextStyle(11, FontWeight.w300, task.error == null ? ColorUtils.secondaryFontColor : Colors.redAccent)),
+                Text(
+                  task.error == null ? task.status : '${AppLocalizations.of(context)!.generic_error_msg}: ${task.error}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: WidgetUtils.customTextStyle(11, FontWeight.w300, task.error == null ? ColorUtils.secondaryFontColor : Colors.redAccent),
+                ),
               ]),
             ),
             const SizedBox(width: 8),
@@ -1591,12 +1548,24 @@ class _MainPageState extends State<MainPage> {
                   TextButton(
                     onPressed: () async {
                       Navigator.pop(context);
-                      if (isFtb) {
-                        await FtbUtils.removeInstance(slug);
-                      } else {
-                        await ModrinthUtils.removeInstance(slug);
+                      try {
+                        if (isFtb) {
+                          await FtbUtils.removeInstance(slug);
+                        } else {
+                          await ModrinthUtils.removeInstance(slug);
+                        }
+                        if (mounted) setState(() {});
+                      } catch (e) {
+                        if (mounted) {
+                          await ErrorDialog.show(
+                            context,
+                            code: 'MODPACK-REMOVE',
+                            operation: 'Could not remove the modpack. Removal may be incomplete.',
+                            details: 'Provider: ${isFtb ? 'FTB' : 'Modrinth'}',
+                            error: e,
+                          );
+                        }
                       }
-                      setState(() {});
                     },
                     child: const Text(
                       'Remove',
@@ -1858,11 +1827,7 @@ class _MainPageState extends State<MainPage> {
                                 child: ColoredCircle(
                                   size: 20,
                                   color: ColorUtils.getColorFromAccent(i),
-                                  outlineColor: Globals.accentColor == i
-                                      ? ColorUtils.getColorFromAccent(
-                                          Globals.accentColor,
-                                        )
-                                      : Colors.transparent,
+                                  outlineColor: Globals.accentColor == i ? ColorUtils.getColorFromAccent(Globals.accentColor) : Colors.transparent,
                                   outlineWidth: 2,
                                   distance: 3,
                                 ),
@@ -2339,7 +2304,13 @@ class _MainPageState extends State<MainPage> {
               Colors.red.withAlpha(160),
               Colors.white,
               () async {
-                await DefaultCacheManager().emptyCache();
+                try {
+                  await DefaultCacheManager().emptyCache();
+                } catch (e) {
+                  if (mounted) {
+                    await ErrorDialog.show(context, code: 'CACHE-CLEAR', operation: 'Could not clear the cache.', error: e);
+                  }
+                }
               },
               AppLocalizations.of(context)!.settings_clear_cache,
             ),
@@ -2357,7 +2328,7 @@ class _MainPageState extends State<MainPage> {
                   if (result == null || result.files.single.path == null) return;
                   final importedAccounts = importAccountListFromJsonPlain(result.files.single.path!);
                   if (mergeImportedAccounts(importedAccounts) > 0) {
-                    saveAccounts();
+                    await saveAccounts();
                     if (mounted) setState(() {});
                   }
                 } catch (e) {
@@ -2535,15 +2506,19 @@ class _MainPageState extends State<MainPage> {
                       ),
                       onPressed: () async {
                         Navigator.pop(context);
-                        FilePickerResult? result = await FilePicker.pickFiles();
-                        if (result != null) {
-                          File file = File(result.files.single.path!);
-                          WidgetUtils.showMessageDialog(
-                            context,
-                            AppLocalizations.of(context)!.account_skin_uploader_title,
-                            await uploadSkin(context, "slim", Globals.getAccount()!, file.path.replaceAll("\\", "/")),
-                            () => Navigator.pop(context),
-                          );
+                        try {
+                          FilePickerResult? result = await FilePicker.pickFiles();
+                          if (result != null) {
+                            File file = File(result.files.single.path!);
+                            WidgetUtils.showMessageDialog(
+                              context,
+                              AppLocalizations.of(context)!.account_skin_uploader_title,
+                              await uploadSkin(context, "slim", Globals.getAccount()!, file.path.replaceAll("\\", "/")),
+                              () => Navigator.pop(context),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) await ErrorDialog.show(context, code: 'SKIN-UPLOAD', operation: 'Could not upload the skin.', error: e);
                         }
                       },
                     ),
@@ -2558,15 +2533,19 @@ class _MainPageState extends State<MainPage> {
                       ),
                       onPressed: () async {
                         Navigator.pop(context);
-                        FilePickerResult? result = await FilePicker.pickFiles();
-                        if (result != null) {
-                          File file = File(result.files.single.path!);
-                          WidgetUtils.showMessageDialog(
-                            context,
-                            AppLocalizations.of(context)!.account_skin_uploader_title,
-                            await uploadSkin(context, "classic", Globals.getAccount()!, file.path.replaceAll("\\", "/")),
-                            () => Navigator.pop(context),
-                          );
+                        try {
+                          FilePickerResult? result = await FilePicker.pickFiles();
+                          if (result != null) {
+                            File file = File(result.files.single.path!);
+                            WidgetUtils.showMessageDialog(
+                              context,
+                              AppLocalizations.of(context)!.account_skin_uploader_title,
+                              await uploadSkin(context, "classic", Globals.getAccount()!, file.path.replaceAll("\\", "/")),
+                              () => Navigator.pop(context),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) await ErrorDialog.show(context, code: 'SKIN-UPLOAD', operation: 'Could not upload the skin.', error: e);
                         }
                       },
                     ),
@@ -2688,7 +2667,7 @@ class _MainPageState extends State<MainPage> {
                                     ),
                                   );
                                 }
-                                saveAccounts();
+                                AccountUtils.saveWithFeedback(context);
                                 Globals.usernamecontroller.text = "";
                               }),
                               rebuild(),
@@ -2729,12 +2708,16 @@ class _MainPageState extends State<MainPage> {
                                       isElyBy: true,
                                     ),
                                   );
-                                  saveAccounts();
+                                  AccountUtils.saveWithFeedback(context);
                                 },
                               ),
                               rebuild(),
                             },
-                          );
+                          ).catchError((Object e) async {
+                            if (context.mounted) {
+                              await ErrorDialog.show(context, code: 'ACCOUNT-ELYBY', operation: 'Ely.by sign-in failed.', error: e);
+                            }
+                          });
                         },
                       ),
                       TextButton(
@@ -2775,7 +2758,11 @@ class _MainPageState extends State<MainPage> {
                               ),
                               rebuild(),
                             },
-                          );
+                          ).catchError((Object e) async {
+                            if (context.mounted) {
+                              await ErrorDialog.show(context, code: 'ACCOUNT-MICROSOFT', operation: 'Microsoft sign-in failed.', error: e);
+                            }
+                          });
                         },
                       ),
                     ],
@@ -2791,7 +2778,7 @@ class _MainPageState extends State<MainPage> {
                   setState(() {
                     if (Globals.accounts.isNotEmpty) {
                       Globals.accounts.removeAt(Globals.AccountSelected);
-                      saveAccounts();
+                      AccountUtils.saveWithFeedback(context);
                     } else {
                       WidgetUtils.showMessageDialog(
                         context,
@@ -2955,6 +2942,16 @@ class _HoverIconState extends State<HoverIcon> {
 }
 
 class AccountUtils {
+  static Future<void> saveWithFeedback(BuildContext context) async {
+    try {
+      await saveAccounts();
+    } catch (e) {
+      if (context.mounted) {
+        await ErrorDialog.show(context, code: 'ACCOUNT-SAVE', operation: 'Could not save accounts. Changes may not persist.', error: e);
+      }
+    }
+  }
+
   //////////////////////////////////
   /////// ACCOUNT MANAGER //////////
   //////////////////////////////////
@@ -3022,68 +3019,77 @@ class AccountUtils {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 5100);
 
     // Lanciatore universale per url
-    await launchUrl(Uri.parse(authUrl));
+    if (!await launchUrl(Uri.parse(authUrl))) {
+      await server.close(force: true);
+      throw StateError('Could not open sign-in browser');
+    }
 
-    await for (HttpRequest request in server) {
-      if (request.uri.path == "/callback") {
-        final accessToken = request.uri.queryParameters["accessToken"];
-        final refreshToken = request.uri.queryParameters["refreshToken"];
+    try {
+      await for (HttpRequest request in server) {
+        if (request.uri.path == "/callback") {
+          final accessToken = request.uri.queryParameters["accessToken"];
+          final refreshToken = request.uri.queryParameters["refreshToken"];
 
-        if (accessToken == null || refreshToken == null) {
+          if (accessToken == null || refreshToken == null) {
+            request.response
+              ..statusCode = 400
+              ..write("Missing tokens")
+              ..close();
+            continue;
+          }
+
+          final htmlPage = await rootBundle.loadString('assets/pages/elyby_success.html');
+
           request.response
-            ..statusCode = 400
-            ..write("Missing tokens")
+            ..statusCode = 200
+            ..headers.contentType = ContentType.html
+            ..write(htmlPage)
             ..close();
-          continue;
-        }
 
-        final htmlPage = await rootBundle.loadString('assets/pages/elyby_success.html');
+          final userResponse = await http.get(
+            Uri.parse("${Urls.elybyBaseURL}/api/account/v1/info"),
+            headers: {"Authorization": "Bearer $accessToken"},
+          );
 
-        request.response
-          ..statusCode = 200
-          ..headers.contentType = ContentType.html
-          ..write(htmlPage)
-          ..close();
+          if (userResponse.statusCode == 200) {
+            final userData = jsonDecode(userResponse.body);
+            final username = userData["username"];
+            final uuid = userData["uuid"];
 
-        final userResponse = await http.get(
-          Uri.parse("${Urls.elybyBaseURL}/api/account/v1/info"),
-          headers: {"Authorization": "Bearer $accessToken"},
-        );
+            bool isSlimSkin = false;
 
-        if (userResponse.statusCode == 200) {
-          final userData = jsonDecode(userResponse.body);
-          final username = userData["username"];
-          final uuid = userData["uuid"];
+            try {
+              final skinUrl = Uri.parse('${Urls.elybySkinsURL}/textures/$username');
+              final skinResponse = await http.get(skinUrl);
 
-          bool isSlimSkin = false;
+              if (skinResponse.statusCode == 200 && skinResponse.body.isNotEmpty) {
+                final data = jsonDecode(skinResponse.body);
 
-          try {
-            final skinUrl = Uri.parse('${Urls.elybySkinsURL}/textures/$username');
-            final skinResponse = await http.get(skinUrl);
-
-            if (skinResponse.statusCode == 200 && skinResponse.body.isNotEmpty) {
-              final data = jsonDecode(skinResponse.body);
-
-              if (data.containsKey('SKIN')) {
-                final skin = data['SKIN'];
-                final model = skin['metadata']?['model'];
-                isSlimSkin = model == 'slim';
+                if (data.containsKey('SKIN')) {
+                  final skin = data['SKIN'];
+                  final model = skin['metadata']?['model'];
+                  isSlimSkin = model == 'slim';
+                }
               }
-            }
-          } catch (e) {}
+            } catch (e) {}
 
-          callback(username, uuid, accessToken, refreshToken, isSlimSkin);
+            callback(username, uuid, accessToken, refreshToken, isSlimSkin);
+          } else {
+            throw HttpException('Ely.by profile request failed: HTTP ${userResponse.statusCode}');
+          }
+
+          await server.close(force: true);
+          Navigator.pop(context);
+          break;
+        } else {
+          request.response
+            ..statusCode = 404
+            ..write("Not found")
+            ..close();
         }
-
-        await server.close(force: true);
-        Navigator.pop(context);
-        break;
-      } else {
-        request.response
-          ..statusCode = 404
-          ..write("Not found")
-          ..close();
       }
+    } finally {
+      await server.close(force: true);
     }
   }
 
@@ -3095,24 +3101,22 @@ class AccountUtils {
 
       try {
         var minecraftAuth = await doMicrosoftRefresh(context, Globals.getAccount()!.refreshToken);
-        if (!minecraftAuth.toString().startsWith("[MC]:")) {
+        if (minecraftAuth is Map && minecraftAuth['access_token'] is String) {
           var minecraftToken = minecraftAuth['access_token'];
           var minecraft = await fetchMinecraftProfile(context, minecraftToken);
 
           if (!minecraft.toString().startsWith("[MC]:")) {
             Globals.getAccount()?.accessToken = minecraftToken;
-            saveAccounts();
+            await saveAccounts();
           } else {
-            WidgetUtils.showMessageDialog(
-              context,
-              AppLocalizations.of(context)!.generic_error_msg,
-              "$minecraft",
-              () => Navigator.pop(context),
-            );
+            throw StateError('Minecraft profile refresh failed');
           }
+        } else {
+          throw StateError('Microsoft account refresh failed');
         }
       } catch (e) {
         Globals.consolecontroller.append("[LAUNCHER]: ${AppLocalizations.of(context)!.account_token_fail}\n");
+        rethrow;
       }
     }
   }
@@ -3135,9 +3139,6 @@ class AccountUtils {
       final String userCode = data['user_code'];
       final String deviceCode = data['device_code'];
       final String verificationUri = data['verification_uri'];
-
-      print(verificationUri);
-      print(userCode);
 
       Navigator.pop(context);
 
@@ -3190,57 +3191,80 @@ class AccountUtils {
         ],
       );
 
+      var polling = false;
+      final expiresAt = DateTime.now().add(Duration(seconds: (data['expires_in'] as num?)?.toInt() ?? 900));
       Timer.periodic(const Duration(seconds: 3), (timer) async {
-        var data = await getToken(
-          context,
-          'urn:ietf:params:oauth:grant-type:device_code',
-          null,
-          deviceCode,
-        );
-        if (data != null) {
-          if (!data.toString().startsWith("[MS]:")) {
-            var microsoftAccess = data['access_token'];
-            var microsoftRefresh = data['refresh_token'];
-            var minecraftAuth = await doXboxLiveAuth(context, microsoftAccess);
-            if (!minecraftAuth.toString().startsWith("[MC]:")) {
-              var minecraftToken = minecraftAuth['access_token'];
-              var minecraft = await fetchMinecraftProfile(context, minecraftToken);
+        if (context is BuildContext && !context.mounted) {
+          timer.cancel();
 
-              if (!minecraft.toString().startsWith("[MC]:")) {
-                // print('ID: ${minecraft['id']}');
-                // print('Name: ${minecraft['name']}');
-                // print('Skins: ${minecraft['skins']}');
-                // print('Capes: ${minecraft['capes']}');
-                // print('Profile actions: ${minecraft['profileActions']}');
-                bool slim = minecraft['skins'][0]["variant"].toString().toUpperCase().contains("SLIM");
-                callback(
-                  minecraft['name'], // username
-                  minecraft['id'], // uuid
-                  minecraftToken, // token (gioco)
-                  microsoftRefresh, // token (ms refresh)
-                  true, // premium
-                  slim, // skin type
-                );
-                saveAccounts();
-                Navigator.pop(context);
-              } else {
-                WidgetUtils.showMessageDialog(
-                  context,
-                  AppLocalizations.of(context)!.generic_error_msg,
-                  "$minecraft",
-                  () => Navigator.pop(context),
-                );
-              }
-            } else {
-              WidgetUtils.showMessageDialog(
-                context,
-                AppLocalizations.of(context)!.generic_error_msg,
-                "$minecraftAuth",
-                () => Navigator.pop(context),
-              );
-            }
+          return;
+        }
+        if (polling) return;
+        polling = true;
+        try {
+          if (DateTime.now().isAfter(expiresAt)) {
             timer.cancel();
+            if (context is BuildContext && context.mounted) {
+              await ErrorDialog.show(context, code: 'ACCOUNT-MICROSOFT-EXPIRED', operation: 'Microsoft sign-in expired. Please try again.');
+            }
+
+            return;
           }
+          var data = await getToken(
+            context,
+            'urn:ietf:params:oauth:grant-type:device_code',
+            null,
+            deviceCode,
+          );
+          if (data != null) {
+            if (!data.toString().startsWith("[MS]:")) {
+              var microsoftAccess = data['access_token'];
+              var microsoftRefresh = data['refresh_token'];
+              var minecraftAuth = await doXboxLiveAuth(context, microsoftAccess);
+              if (minecraftAuth is Map && minecraftAuth['access_token'] is String) {
+                var minecraftToken = minecraftAuth['access_token'];
+                var minecraft = await fetchMinecraftProfile(context, minecraftToken);
+
+                if (!minecraft.toString().startsWith("[MC]:")) {
+                  // print('ID: ${minecraft['id']}');
+                  // print('Name: ${minecraft['name']}');
+                  // print('Skins: ${minecraft['skins']}');
+                  // print('Capes: ${minecraft['capes']}');
+                  // print('Profile actions: ${minecraft['profileActions']}');
+                  bool slim = minecraft['skins'][0]["variant"].toString().toUpperCase().contains("SLIM");
+                  callback(
+                    minecraft['name'], // username
+                    minecraft['id'], // uuid
+                    minecraftToken, // token (gioco)
+                    microsoftRefresh, // token (ms refresh)
+                    true, // premium
+                    slim, // skin type
+                  );
+                  await saveAccounts();
+                  Navigator.pop(context);
+                } else {
+                  WidgetUtils.showMessageDialog(
+                    context,
+                    AppLocalizations.of(context)!.generic_error_msg,
+                    "$minecraft",
+                    () => Navigator.pop(context),
+                  );
+                }
+              } else {
+                if (context is BuildContext && context.mounted) {
+                  await ErrorDialog.show(context, code: 'ACCOUNT-XBOX', operation: 'Xbox or Minecraft authentication failed.');
+                }
+              }
+              timer.cancel();
+            }
+          }
+        } catch (e) {
+          timer.cancel();
+          if (context is BuildContext && context.mounted) {
+            await ErrorDialog.show(context, code: 'ACCOUNT-MICROSOFT-TOKEN', operation: 'Microsoft sign-in could not be completed.', error: e);
+          }
+        } finally {
+          polling = false;
         }
       });
     } else {
