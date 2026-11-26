@@ -7,7 +7,7 @@
 
 **A modern Flutter interface for Morpheus Launcher.**
 
-![Flutter](https://img.shields.io/badge/Flutter-3.44.6-02569B?logo=flutter\&logoColor=white)
+![Flutter](https://img.shields.io/badge/Flutter-3.50.1-02569B?logo=flutter\&logoColor=white)
 ![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Linux%20%7C%20macOS-4B5563)
 ![Engineering Confidence: 7/10](https://img.shields.io/badge/Engineering%20Confidence-7%2F10-7CB342)
 
@@ -126,7 +126,7 @@ Premium users can also modify their skin through the account management interfac
 
 To build Morpheus Launcher GUI you need:
 
-* **Flutter 3.19.0**
+* **Flutter 3.50.1**
 * **IntelliJ IDEA Community or Ultimate**
 * one of the supported desktop platforms:
 
