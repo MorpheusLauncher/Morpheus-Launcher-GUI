@@ -131,8 +131,8 @@ To build Morpheus Launcher GUI you need:
 * one of the supported desktop platforms:
 
   * Windows 10 or Windows 11;
-  * Ubuntu 20.04 or newer;
-  * macOS 11.3 or newer.
+  * Ubuntu 24.04 or newer;
+  * macOS 13.5 or newer.
 
 Make sure Flutter is correctly installed and available from your terminal:
 
